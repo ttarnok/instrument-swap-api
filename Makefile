@@ -1,7 +1,7 @@
 .PHONY: format
 format:
-	go fmt ./...
+	@go fmt ./...
 
 .PHONY: run
 run: format
-	go run ./cmd/api
+	@go run ./cmd/api

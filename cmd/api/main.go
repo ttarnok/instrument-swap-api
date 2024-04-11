@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -25,12 +26,17 @@ func main() {
 	// ----------------------------–----------------------------------------------
 	// Init config
 
-	var cfg config = config{4000, "dev"}
+	var cfg config
+	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 
+	flag.Parse()
 	// ----------------------------–----------------------------------------------
 	// Init logger
 
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{AddSource: true}))
+
+	// ----------------------------–----------------------------------------------
+	// Init database
 
 	// ----------------------------–----------------------------------------------
 	// Init and Stratup Server

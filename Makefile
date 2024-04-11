@@ -9,4 +9,4 @@ run: format
 .PHONY: br
 br: format
 	@go build -o=./bin/api ./cmd/api
-	./bin/api -port=8000
+	./bin/api -port=4000

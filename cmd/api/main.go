@@ -43,12 +43,9 @@ func main() {
 
 	app := application{config: cfg, logger: logger}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/liveliness", app.livelinesskHandler)
-
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      mux,
+		Handler:      app.routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -59,8 +56,4 @@ func main() {
 	err := srv.ListenAndServe()
 	logger.Error(err.Error())
 	os.Exit(1)
-}
-
-func (a application) livelinesskHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Im alive"))
 }

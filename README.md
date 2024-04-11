@@ -27,7 +27,7 @@ GET    /v1/liveliness
 GET    /debug/vars // Display apprication metrics
 GET    /debug/pprof // Display debug infos
 
-# TODO:
+# TODO List:
 handle OPTIONS HTTP method
 create custom 405, 404 middleware
 consider using Cache-Control header response happypath/errorpath

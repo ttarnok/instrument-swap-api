@@ -5,10 +5,12 @@ import (
 	"net/http"
 )
 
+type envelope map[string]any
+
 func (app *application) writeJSON(
 	w http.ResponseWriter,
 	status int,
-	data any,
+	data envelope,
 	headers http.Header) error {
 
 	js, err := json.Marshal(data)

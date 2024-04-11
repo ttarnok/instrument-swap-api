@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
+
+	"github.com/ttarnok/instrument-swap-api/internal/data"
 )
 
 func (app *application) showInstrumentHandler(w http.ResponseWriter, r *http.Request) {
@@ -14,7 +15,21 @@ func (app *application) showInstrumentHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	fmt.Fprintf(w, "Param value: %d\n", id)
+	instrument := data.Instrument{
+		Name:            "MS-20",
+		Manufacturer:    "Korg",
+		ManufactureYear: "1980",
+		Type:            "Synthesiser",
+		EstimatedValue:  100000,
+		Condition:       "Excellent",
+		FamousOwners:    []string{"Cher", "Don", "Eye"},
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"instrument": instrument}, nil)
+	if err != nil {
+		app.logger.Error(err.Error())
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
 
 }
 

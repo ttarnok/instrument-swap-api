@@ -11,7 +11,7 @@ func (app *application) showInstrumentHandler(w http.ResponseWriter, r *http.Req
 	// Read and Validate params
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil || id < 1 {
-		http.NotFound(w, r)
+		app.notFoundResponse(w, r)
 		return
 	}
 
@@ -27,8 +27,7 @@ func (app *application) showInstrumentHandler(w http.ResponseWriter, r *http.Req
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"instrument": instrument}, nil)
 	if err != nil {
-		app.logger.Error(err.Error())
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		app.serverErrorLogResponse(w, r, err)
 	}
 
 }

@@ -17,11 +17,7 @@ func (app *application) logError(r *http.Request, err error) {
 
 // helper for sending JSON formatted error responses
 // TODO: consider to use error handloing middleware
-func (app *application) errorResponse(
-	w http.ResponseWriter,
-	r *http.Request,
-	status int,
-	message any) {
+func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message any) {
 
 	env := envelope{"error": message}
 
@@ -34,10 +30,8 @@ func (app *application) errorResponse(
 
 // helper to respond internal server error to the client
 // TODO: consider using error handling middleware
-func (app *application) serverErrorLogResponse(
-	w http.ResponseWriter,
-	r *http.Request,
-	err error) {
+func (app *application) serverErrorLogResponse(w http.ResponseWriter, r *http.Request, err error) {
+
 	app.logError(r, err)
 
 	message := "the server encountered a problem and could not process your request"

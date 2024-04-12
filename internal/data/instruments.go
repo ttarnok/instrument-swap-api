@@ -11,7 +11,7 @@ type Instrument struct {
 	Manufacturer    string    `json:"manufacturer"`
 	ManufactureYear string    `json:"manufacture_year"`
 	Type            string    `json:"type"`
-	EstimatedValue  float64   `json:"estimated_value"`
+	EstimatedValue  int64     `json:"estimated_value"`
 	Condition       string    `json:"condition"`
 	FamousOwners    []string  `json:"famous_owners"`
 }

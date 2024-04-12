@@ -1,12 +1,12 @@
-.PHONY: format
-format:
+.PHONY: fmt
+fmt:
 	@go fmt ./...
 
 .PHONY: run
-run: format
+run: fmt
 	@go run ./cmd/api
 
 .PHONY: br
-br: format
+br: fmt
 	@go build -o=./bin/api ./cmd/api
 	./bin/api -port=4000

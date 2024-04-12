@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -34,6 +35,21 @@ func (app *application) showInstrumentHandler(w http.ResponseWriter, r *http.Req
 
 func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.Request) {
 
-	w.Write([]byte("Creating a new instrument"))
+	var input struct {
+		Name            string   `json:"name"`
+		Manufacturer    string   `json:"manufacturer"`
+		ManufactureYear string   `json:"manufacture_year"`
+		Type            string   `json:"type"`
+		EstimatedValue  int64    `json:"estimated_value"`
+		Condition       string   `json:"condition"`
+		FamousOwners    []string `json:"famous_owners"`
+	}
 
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		app.errorResponse(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	app.writeJSON(w, http.StatusOK, envelope{"test": input}, nil)
 }

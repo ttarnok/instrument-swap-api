@@ -44,7 +44,7 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 		FamousOwners    []string `json:"famous_owners"`
 	}
 
-	err := app.readJSON(r, &input)
+	err := app.readJSON(w, r, &input)
 	if err != nil {
 		app.errorResponse(w, r, http.StatusBadRequest, err.Error())
 		return

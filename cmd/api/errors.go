@@ -4,9 +4,9 @@ import (
 	"net/http"
 )
 
-// helper for logging errors in handlers
-// TODO: consider to use error handling middleware
-// TODO: consider to log trace id too
+// Helper for logging errors in handlers.
+// TODO: consider to use error handling middleware.
+// TODO: consider to log trace id too.
 func (app *application) logError(r *http.Request, err error) {
 	var (
 		method = r.Method
@@ -15,8 +15,8 @@ func (app *application) logError(r *http.Request, err error) {
 	app.logger.Error(err.Error(), "method", method, "uri", uri)
 }
 
-// helper for sending JSON formatted error responses
-// TODO: consider to use error handloing middleware
+// Helper for sending JSON formatted error responses.
+// TODO: consider to use error handloing middleware.
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message any) {
 
 	env := envelope{"error": message}
@@ -28,8 +28,8 @@ func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, st
 	}
 }
 
-// helper to respond internal server error to the client
-// TODO: consider using error handling middleware
+// Helper to respond internal server error to the client.
+// TODO: consider using error handling middleware.
 func (app *application) serverErrorLogResponse(w http.ResponseWriter, r *http.Request, err error) {
 
 	app.logError(r, err)
@@ -37,4 +37,9 @@ func (app *application) serverErrorLogResponse(w http.ResponseWriter, r *http.Re
 	message := "the server encountered a problem and could not process your request"
 	app.errorResponse(w, r, http.StatusInternalServerError, message)
 
+}
+
+// Helper to respond json validation errors.
+func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
+	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
 }

@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/ttarnok/instrument-swap-api/internal/data"
+	"github.com/ttarnok/instrument-swap-api/internal/validator"
 )
 
 func (app *application) showInstrumentHandler(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +19,7 @@ func (app *application) showInstrumentHandler(w http.ResponseWriter, r *http.Req
 	instrument := data.Instrument{
 		Name:            "MS-20",
 		Manufacturer:    "Korg",
-		ManufactureYear: "1980",
+		ManufactureYear: 1980,
 		Type:            "Synthesiser",
 		EstimatedValue:  100000,
 		Condition:       "Excellent",
@@ -37,7 +38,7 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 	var input struct {
 		Name            string   `json:"name"`
 		Manufacturer    string   `json:"manufacturer"`
-		ManufactureYear string   `json:"manufacture_year"`
+		ManufactureYear int32    `json:"manufacture_year"`
 		Type            string   `json:"type"`
 		EstimatedValue  int64    `json:"estimated_value"`
 		Condition       string   `json:"condition"`
@@ -47,6 +48,23 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 	err := app.readJSON(w, r, &input)
 	if err != nil {
 		app.errorResponse(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	instrument := &data.Instrument{
+		Name:            input.Name,
+		Manufacturer:    input.Manufacturer,
+		ManufactureYear: input.ManufactureYear,
+		Type:            input.Type,
+		EstimatedValue:  input.EstimatedValue,
+		Condition:       input.Condition,
+		FamousOwners:    input.FamousOwners,
+	}
+
+	v := validator.New()
+
+	if data.ValidateInstrument(v, instrument); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 

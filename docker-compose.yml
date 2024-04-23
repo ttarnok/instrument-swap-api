@@ -1,0 +1,16 @@
+# Use postgres/example user/password credentials
+version: '3.9'
+
+services:
+
+  db:
+    image: postgres:16-alpine
+    container_name: instrument-swap-db
+    restart: always
+    env_file:
+      - .env
+    shm_size: 128mb
+    volumes:
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"

@@ -42,6 +42,7 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 		Type            string   `json:"type"`
 		EstimatedValue  int64    `json:"estimated_value"`
 		Condition       string   `json:"condition"`
+		Description     string   `json:"description"`
 		FamousOwners    []string `json:"famous_owners"`
 	}
 

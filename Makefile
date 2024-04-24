@@ -21,3 +21,11 @@ dcup:
 .PHONY: dcdown
 dcdown:
 	docker-compose down
+
+.PHONY: mup
+mup:
+	migrate -path=./migrations -database=$(INSTRUMENT_SWAP_DB_DSN) up
+
+.PHONY: mver
+mver:
+	migrate -path=./migrations -database=$(INSTRUMENT_SWAP_DB_DSN) version

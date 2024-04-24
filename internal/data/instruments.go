@@ -17,7 +17,9 @@ type Instrument struct {
 	Type            string    `json:"type"`
 	EstimatedValue  int64     `json:"estimated_value"`
 	Condition       string    `json:"condition"`
+	Description     string    `json:"description"`
 	FamousOwners    []string  `json:"famous_owners"`
+	Version         int32     `json:"version"`
 }
 
 func ValidateInstrument(v *validator.Validator, instrument *Instrument) {

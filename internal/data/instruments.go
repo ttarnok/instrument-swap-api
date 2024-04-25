@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/lib/pq"
@@ -12,8 +13,6 @@ import (
 type Instrument struct {
 	ID              int64     `json:"id"`
 	CreatedAt       time.Time `json:"-"`
-	IsDeleted       bool      `json:"-"`
-	DeletedAt       time.Time `json:"-"`
 	Name            string    `json:"name"`
 	Manufacturer    string    `json:"manufacturer"`
 	ManufactureYear int32     `json:"manufacture_year"`
@@ -78,7 +77,44 @@ func (i InstrumentModel) Insert(instrument *Instrument) error {
 
 // Get retrieves an instrument from the database based on the provided id value.
 func (i InstrumentModel) Get(id int64) (*Instrument, error) {
-	return nil, nil
+
+	if id < 1 {
+		return nil, ErrRecordnotFound
+	}
+
+	query := `
+		SELECT id, created_at, name, manufacturer, manufacture_year, type,
+			estimated_value, condition, description, famous_owners, version
+			FROM instruments
+				WHERE id = $1
+					AND is_deleted = FALSE`
+
+	var instrument Instrument
+
+	err := i.DB.QueryRow(query, id).Scan(
+		&instrument.ID,
+		&instrument.CreatedAt,
+		&instrument.Name,
+		&instrument.Manufacturer,
+		&instrument.ManufactureYear,
+		&instrument.Type,
+		&instrument.EstimatedValue,
+		&instrument.Condition,
+		&instrument.Description,
+		pq.Array(&instrument.FamousOwners),
+		&instrument.Version,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordnotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &instrument, nil
 }
 
 // GetAll returns all instrumets stored in the database.
@@ -88,7 +124,34 @@ func (i InstrumentModel) GetAll() ([]*Instrument, error) {
 
 // Update updates the matching instrument in the database with the provided field values.
 func (i InstrumentModel) Update(instrument *Instrument) error {
-	return nil
+
+	query := `
+		UPDATE instruments
+			SET name = $1,
+			    manufacturer = $2,
+					manufacture_year = $3,
+					type = $4,
+					estimated_value = $5,
+					condition = $6,
+					description = $7,
+					famous_owners = $8
+		WHERE id = $9
+		  AND is_deleted = FALSE
+		RETURNING version`
+
+	args := []any{
+		instrument.Name,
+		instrument.Manufacturer,
+		instrument.ManufactureYear,
+		instrument.Type,
+		instrument.EstimatedValue,
+		instrument.Condition,
+		instrument.Description,
+		pq.Array(instrument.FamousOwners),
+		instrument.ID,
+	}
+
+	return i.DB.QueryRow(query, args...).Scan(&instrument.Version)
 }
 
 // Delete deletes the corresponding instrument record with the provided id in the database.

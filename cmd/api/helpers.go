@@ -6,10 +6,20 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
 type envelope map[string]any
+
+func (app *application) extractIDParam(r *http.Request) (int64, error) {
+	// Read and Validate params
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id < 1 {
+		return 0, err
+	}
+	return id, nil
+}
 
 func (app *application) writeJSON(w http.ResponseWriter, status int, data envelope, headers http.Header) error {
 

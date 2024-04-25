@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -69,5 +70,19 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	app.writeJSON(w, http.StatusOK, envelope{"test": input}, nil)
+	err = app.models.Instruments.Insert(instrument)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+	// create a location header for the client, with the location of the newly created resource
+	headers := make(http.Header)
+	headers.Set("Location", fmt.Sprintf("/v1/instrumets/%d", instrument.ID))
+
+	err = app.writeJSON(w, http.StatusCreated, envelope{"instrument": instrument}, headers)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+	}
+
 }

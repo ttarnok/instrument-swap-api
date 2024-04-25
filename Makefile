@@ -26,6 +26,10 @@ dcdown:
 mup:
 	migrate -path=./migrations -database=$(INSTRUMENT_SWAP_DB_DSN) up
 
+.PHONY: mdown
+mdown:
+	migrate -path=./migrations -database=$(INSTRUMENT_SWAP_DB_DSN) down
+
 .PHONY: mver
 mver:
 	migrate -path=./migrations -database=$(INSTRUMENT_SWAP_DB_DSN) version

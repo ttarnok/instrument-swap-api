@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS instruments (
   name text NOT NULL,
   manufacturer text NOT NULL,
   manufacture_year integer NOT NULL,
-  type integer NOT NULL,
+  type text NOT NULL,
   estimated_value integer NOT NULL,
   condition text NOT NULL,
   description text,

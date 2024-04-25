@@ -17,16 +17,16 @@ func (app *application) showInstrumentHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	fmt.Println("teszt", id)
-
-	instrument := data.Instrument{
-		Name:            "MS-20",
-		Manufacturer:    "Korg",
-		ManufactureYear: 1980,
-		Type:            "Synthesiser",
-		EstimatedValue:  100000,
-		Condition:       "Excellent",
-		FamousOwners:    []string{"Cher", "Don", "Eye"},
+	instrument, err := app.models.Instruments.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordnotFound):
+			app.notFoundResponse(w, r)
+			return
+		default:
+			app.serverErrorLogResponse(w, r, err)
+			return
+		}
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"instrument": instrument}, nil)

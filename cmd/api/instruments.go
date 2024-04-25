@@ -32,6 +32,7 @@ func (app *application) showInstrumentHandler(w http.ResponseWriter, r *http.Req
 	err = app.writeJSON(w, http.StatusOK, envelope{"instrument": instrument}, nil)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
+		return
 	}
 
 }
@@ -85,6 +86,7 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 	err = app.writeJSON(w, http.StatusCreated, envelope{"instrument": instrument}, headers)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
+		return
 	}
 
 }
@@ -150,6 +152,34 @@ func (app *application) updateInstrumentHandler(w http.ResponseWriter, r *http.R
 	err = app.writeJSON(w, http.StatusOK, envelope{"instrument": instrument}, nil)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+}
+
+func (app *application) deleteInstrumentHandler(w http.ResponseWriter, r *http.Request) {
+
+	id, err := app.extractIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	err = app.models.Instruments.Delete(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordnotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorLogResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "instrument successfully deleted"}, nil)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
 	}
 
 }

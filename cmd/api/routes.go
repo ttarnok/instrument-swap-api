@@ -10,6 +10,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("GET /v1/instruments/{id}", app.showInstrumentHandler)
 	mux.HandleFunc("POST /v1/instruments", app.createInstrumentHandler)
 	mux.HandleFunc("PATCH /v1/instruments/{id}", app.updateInstrumentHandler)
+	mux.HandleFunc("DELETE /v1/instruments/{id}", app.deleteInstrumentHandler)
 
 	return app.recoverPanic(mux)
 }

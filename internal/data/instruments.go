@@ -156,5 +156,31 @@ func (i InstrumentModel) Update(instrument *Instrument) error {
 
 // Delete deletes the corresponding instrument record with the provided id in the database.
 func (i InstrumentModel) Delete(id int64) error {
+
+	if id < 1 {
+		return ErrRecordnotFound
+	}
+
+	query := `
+		UPDATE instruments
+			SET is_deleted = TRUE, deleted_at = NOW()
+		WHERE ID = $1
+		  AND is_deleted = FALSE`
+
+	result, err := i.DB.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrRecordnotFound
+	}
+
 	return nil
+
 }

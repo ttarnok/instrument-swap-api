@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"time"
@@ -72,7 +73,10 @@ func (i InstrumentModel) Insert(instrument *Instrument) error {
 		pq.Array(instrument.FamousOwners),
 	}
 
-	return i.DB.QueryRow(query, args...).Scan(&instrument.ID, &instrument.CreatedAt, &instrument.Version)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return i.DB.QueryRowContext(ctx, query, args...).Scan(&instrument.ID, &instrument.CreatedAt, &instrument.Version)
 }
 
 // Get retrieves an instrument from the database based on the provided id value.
@@ -92,7 +96,10 @@ func (i InstrumentModel) Get(id int64) (*Instrument, error) {
 
 	var instrument Instrument
 
-	err := i.DB.QueryRow(query, id).Scan(
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := i.DB.QueryRowContext(ctx, query, id).Scan(
 		&instrument.ID,
 		&instrument.CreatedAt,
 		&instrument.Name,
@@ -157,7 +164,10 @@ func (i InstrumentModel) Update(instrument *Instrument) error {
 		instrument.Version,
 	}
 
-	err := i.DB.QueryRow(query, args...).Scan(&instrument.Version)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := i.DB.QueryRowContext(ctx, query, args...).Scan(&instrument.Version)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -185,7 +195,10 @@ func (i InstrumentModel) Delete(id int64) error {
 		WHERE ID = $1
 		  AND is_deleted = FALSE`
 
-	result, err := i.DB.Exec(query, id)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := i.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}

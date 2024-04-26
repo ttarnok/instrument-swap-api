@@ -111,13 +111,13 @@ func (app *application) updateInstrumentHandler(w http.ResponseWriter, r *http.R
 	}
 
 	var input struct {
-		Name            string   `json:"name"`
-		Manufacturer    string   `json:"manufacturer"`
-		ManufactureYear int32    `json:"manufacture_year"`
-		Type            string   `json:"type"`
-		EstimatedValue  int64    `json:"estimated_value"`
-		Condition       string   `json:"condition"`
-		Description     string   `json:"description"`
+		Name            *string  `json:"name"`
+		Manufacturer    *string  `json:"manufacturer"`
+		ManufactureYear *int32   `json:"manufacture_year"`
+		Type            *string  `json:"type"`
+		EstimatedValue  *int64   `json:"estimated_value"`
+		Condition       *string  `json:"condition"`
+		Description     *string  `json:"description"`
 		FamousOwners    []string `json:"famous_owners"`
 	}
 
@@ -127,14 +127,30 @@ func (app *application) updateInstrumentHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	instrument.Name = input.Name
-	instrument.Manufacturer = input.Manufacturer
-	instrument.ManufactureYear = input.ManufactureYear
-	instrument.Type = input.Type
-	instrument.EstimatedValue = input.EstimatedValue
-	instrument.Condition = input.Condition
-	instrument.Description = input.Description
-	instrument.FamousOwners = input.FamousOwners
+	if input.Name != nil {
+		instrument.Name = *input.Name
+	}
+	if input.Manufacturer != nil {
+		instrument.Manufacturer = *input.Manufacturer
+	}
+	if input.ManufactureYear != nil {
+		instrument.ManufactureYear = *input.ManufactureYear
+	}
+	if input.Type != nil {
+		instrument.Type = *input.Type
+	}
+	if input.EstimatedValue != nil {
+		instrument.EstimatedValue = *input.EstimatedValue
+	}
+	if input.Condition != nil {
+		instrument.Condition = *input.Condition
+	}
+	if input.Description != nil {
+		instrument.Description = *input.Description
+	}
+	if input.FamousOwners != nil {
+		instrument.FamousOwners = input.FamousOwners
+	}
 
 	v := validator.New()
 

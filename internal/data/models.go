@@ -8,6 +8,8 @@ import (
 var (
 	// ErrRecordnotFound represents the miss of the requested data.
 	ErrRecordnotFound = errors.New("record not found")
+	// ErrEditConflict reprezents a race condition error during updates
+	ErrEditConflict = errors.New("edit conflict")
 )
 
 // Model wraps all database models used in the application.

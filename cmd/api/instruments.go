@@ -91,6 +91,7 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 
 }
 
+// JSON items with null values will be ignored and will remain unchanged
 func (app *application) updateInstrumentHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := app.extractIDParam(r)
@@ -161,7 +162,12 @@ func (app *application) updateInstrumentHandler(w http.ResponseWriter, r *http.R
 
 	err = app.models.Instruments.Update(instrument)
 	if err != nil {
-		app.serverErrorLogResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorLogResponse(w, r, err)
+		}
 		return
 	}
 

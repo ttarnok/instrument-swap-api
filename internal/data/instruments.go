@@ -76,7 +76,7 @@ func (i InstrumentModel) Insert(instrument *Instrument) error {
 }
 
 // Get retrieves an instrument from the database based on the provided id value.
-// Returns ErrRecordnotFound if no data found to retrieve
+// Returns ErrRecordnotFound if no data found during retrieve.
 func (i InstrumentModel) Get(id int64) (*Instrument, error) {
 
 	if id < 1 {
@@ -124,7 +124,8 @@ func (i InstrumentModel) GetAll() ([]*Instrument, error) {
 }
 
 // Update updates the matching instrument in the database with the provided field values.
-// Returns ErrRecordnotFound if no data found to update
+// Returns ErrRecordnotFound if no target data found during update.
+// Returns ErrEditConflict if there was a race condidion during update.
 func (i InstrumentModel) Update(instrument *Instrument) error {
 
 	query := `
@@ -136,8 +137,10 @@ func (i InstrumentModel) Update(instrument *Instrument) error {
 					estimated_value = $5,
 					condition = $6,
 					description = $7,
-					famous_owners = $8
+					famous_owners = $8,
+					version = version + 1
 		WHERE id = $9
+			AND version = $10
 		  AND is_deleted = FALSE
 		RETURNING version`
 
@@ -151,13 +154,25 @@ func (i InstrumentModel) Update(instrument *Instrument) error {
 		instrument.Description,
 		pq.Array(instrument.FamousOwners),
 		instrument.ID,
+		instrument.Version,
 	}
 
-	return i.DB.QueryRow(query, args...).Scan(&instrument.Version)
+	err := i.DB.QueryRow(query, args...).Scan(&instrument.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+
+	return nil
+
 }
 
 // Delete deletes the corresponding instrument record with the provided id in the database.
-// Returns ErrRecordnotFound if no data found to delete
+// Returns ErrRecordnotFound if no target data found to delete.
 func (i InstrumentModel) Delete(id int64) error {
 
 	if id < 1 {

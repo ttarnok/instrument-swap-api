@@ -33,3 +33,6 @@ mdown:
 .PHONY: mver
 mver:
 	migrate -path=./migrations -database=$(INSTRUMENT_SWAP_DB_DSN) version
+
+mforce1:
+	migrate -path=./migrations -database=$(INSTRUMENT_SWAP_DB_DSN) force 1

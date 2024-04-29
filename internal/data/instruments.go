@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/lib/pq"
@@ -126,8 +127,65 @@ func (i InstrumentModel) Get(id int64) (*Instrument, error) {
 }
 
 // GetAll returns all instrumets stored in the database.
-func (i InstrumentModel) GetAll() ([]*Instrument, error) {
-	return nil, nil
+func (i InstrumentModel) GetAll(name string, manufacturer string, iType string, famousOwners []string, filters Filters) ([]*Instrument, error) {
+
+	query := fmt.Sprintf(`
+		SELECT id, name, manufacturer, manufacture_year, type, estimated_value,
+			condition, description, famous_owners, version
+		FROM instruments
+		WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
+		  AND (lower(manufacturer) = lower($2) OR $2 = '')
+			AND (lower(type) = lower($3) OR $3 = '')
+			AND (famous_owners @> $4 OR $4 = '{}')
+		  AND is_deleted = FALSE
+		ORDER BY %s %s, id ASC
+		LIMIT $5 OFFSET $6`, filters.sortColumn(), filters.sortDirection())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	args := []any{
+		name, manufacturer, iType, pq.Array(famousOwners), filters.limit(), filters.offset(),
+	}
+
+	rows, err := i.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	instruments := []*Instrument{}
+
+	for rows.Next() {
+
+		var instrument Instrument
+
+		err := rows.Scan(
+			&instrument.ID,
+			&instrument.Name,
+			&instrument.Manufacturer,
+			&instrument.ManufactureYear,
+			&instrument.Type,
+			&instrument.EstimatedValue,
+			&instrument.Condition,
+			&instrument.Description,
+			pq.Array(&instrument.FamousOwners),
+			&instrument.Version,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		instruments = append(instruments, &instrument)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return instruments, nil
 }
 
 // Update updates the matching instrument in the database with the provided field values.

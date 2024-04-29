@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/ttarnok/instrument-swap-api/internal/validator"
 )
 
 type envelope map[string]any
@@ -96,4 +99,42 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 	}
 
 	return nil
+}
+
+func (app *application) readQParamString(qs url.Values, key string, defaultValue string) string {
+
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+
+	return s
+}
+
+func (app *application) readQParamCSV(qs url.Values, key string, defaultValue []string) []string {
+
+	csv := qs.Get(key)
+
+	if csv == "" {
+		return defaultValue
+	}
+
+	return strings.Split(csv, ",")
+}
+
+func (app *application) readQParamInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+
+	sv := qs.Get(key)
+	if sv == "" {
+		return defaultValue
+	}
+
+	iv, err := strconv.Atoi(sv)
+	if err != nil {
+		v.AddError(key, "must be an integer value")
+		return defaultValue
+	}
+
+	return iv
+
 }

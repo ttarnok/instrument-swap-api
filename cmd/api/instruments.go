@@ -9,6 +9,51 @@ import (
 	"github.com/ttarnok/instrument-swap-api/internal/validator"
 )
 
+func (app *application) listInstrumentsHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Name         string
+		Manufacturer string
+		Type         string
+		FamousOwners []string
+		data.Filters
+	}
+
+	v := validator.New()
+
+	qs := r.URL.Query()
+
+	input.Name = app.readQParamString(qs, "name", "")
+	input.Manufacturer = app.readQParamString(qs, "manufacturer", "")
+	input.Type = app.readQParamString(qs, "type", "")
+	input.FamousOwners = app.readQParamCSV(qs, "famous_owners", []string{})
+
+	input.Page = app.readQParamInt(qs, "page", 1, v)
+	input.PageSize = app.readQParamInt(qs, "page_size", 20, v)
+
+	input.Sort = app.readQParamString(qs, "sort", "id")
+	input.SortSafeList = []string{"id", "name", "manufacturer", "type", "manufacture_year", "estimated_value",
+		"-id", "-name", "-manufacturer", "-type", "-manufacture_year", "-estimated_value"}
+
+	data.ValidateFilters(v, input.Filters)
+
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	instruments, err := app.models.Instruments.GetAll(input.Name, input.Manufacturer, input.Type, input.FamousOwners, input.Filters)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"instruments": instruments}, nil)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+}
+
 func (app *application) showInstrumentHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := app.extractIDParam(r)

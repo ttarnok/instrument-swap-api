@@ -127,10 +127,10 @@ func (i InstrumentModel) Get(id int64) (*Instrument, error) {
 }
 
 // GetAll returns all instrumets stored in the database.
-func (i InstrumentModel) GetAll(name string, manufacturer string, iType string, famousOwners []string, filters Filters) ([]*Instrument, error) {
+func (i InstrumentModel) GetAll(name string, manufacturer string, iType string, famousOwners []string, filters Filters) ([]*Instrument, MetaData, error) {
 
 	query := fmt.Sprintf(`
-		SELECT id, name, manufacturer, manufacture_year, type, estimated_value,
+		SELECT count(*) over(), id, name, manufacturer, manufacture_year, type, estimated_value,
 			condition, description, famous_owners, version
 		FROM instruments
 		WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
@@ -150,11 +150,12 @@ func (i InstrumentModel) GetAll(name string, manufacturer string, iType string, 
 
 	rows, err := i.DB.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, MetaData{}, err
 	}
 
 	defer rows.Close()
 
+	totalRecords := 0
 	instruments := []*Instrument{}
 
 	for rows.Next() {
@@ -162,6 +163,7 @@ func (i InstrumentModel) GetAll(name string, manufacturer string, iType string, 
 		var instrument Instrument
 
 		err := rows.Scan(
+			&totalRecords,
 			&instrument.ID,
 			&instrument.Name,
 			&instrument.Manufacturer,
@@ -175,17 +177,19 @@ func (i InstrumentModel) GetAll(name string, manufacturer string, iType string, 
 		)
 
 		if err != nil {
-			return nil, err
+			return nil, MetaData{}, err
 		}
 
 		instruments = append(instruments, &instrument)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, MetaData{}, err
 	}
 
-	return instruments, nil
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return instruments, metadata, nil
 }
 
 // Update updates the matching instrument in the database with the provided field values.

@@ -41,13 +41,13 @@ func (app *application) listInstrumentsHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	instruments, err := app.models.Instruments.GetAll(input.Name, input.Manufacturer, input.Type, input.FamousOwners, input.Filters)
+	instruments, metadata, err := app.models.Instruments.GetAll(input.Name, input.Manufacturer, input.Type, input.FamousOwners, input.Filters)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"instruments": instruments}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"instruments": instruments, "metadata": metadata}, nil)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
 		return

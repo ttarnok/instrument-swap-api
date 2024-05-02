@@ -13,5 +13,5 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("PATCH /v1/instruments/{id}", app.updateInstrumentHandler)
 	mux.HandleFunc("DELETE /v1/instruments/{id}", app.deleteInstrumentHandler)
 
-	return app.recoverPanic(mux)
+	return app.recoverPanic(app.rateLimit(mux))
 }

@@ -12,7 +12,7 @@ run: fmt
 br: fmt
 
 	@go build -o=./bin/api ./cmd/api
-	./bin/api -port=4000 -db-dsn=$(INSTRUMENT_SWAP_DB_DSN)
+	./bin/api -port=4000 -db-dsn=$(INSTRUMENT_SWAP_DB_DSN) -limiter-enabled=false
 
 .PHONY: dcup
 dcup:

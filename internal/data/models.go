@@ -15,11 +15,13 @@ var (
 // Model wraps all database models used in the application.
 type Models struct {
 	Instruments InstrumentModel
+	Users       UserModel
 }
 
 // NewModel rerturn a newly created model based on the specified database connection.
 func NewModel(db *sql.DB) Models {
 	return Models{
 		Instruments: InstrumentModel{DB: db},
+		Users:       UserModel{DB: db},
 	}
 }

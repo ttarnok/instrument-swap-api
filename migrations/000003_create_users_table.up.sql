@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   deleted_at timestamp(0),
   name text NOT NULL,
   email citext UNIQUE NOT NULL,
-  passwords_hash bytea NOT NULL,
+  password_hash bytea NOT NULL,
   activated bool NOT NULL,
   version integer NOT NULL DEFAULT 1
 );

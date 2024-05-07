@@ -14,8 +14,9 @@ var (
 
 // Model wraps all database models used in the application.
 type Models struct {
-	Instruments InstrumentModel
-	Users       UserModel
+	Instruments    InstrumentModel
+	Users          UserModel
+	StatefulTokens StatefulTokenModel
 }
 
 // NewModel rerturn a newly created model based on the specified database connection.

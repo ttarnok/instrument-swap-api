@@ -81,11 +81,11 @@ func (i InstrumentModel) Insert(instrument *Instrument) error {
 }
 
 // Get retrieves an instrument from the database based on the provided id value.
-// Returns ErrRecordnotFound if no data found during retrieve.
+// Returns ErrRecordNotFound if no data found during retrieve.
 func (i InstrumentModel) Get(id int64) (*Instrument, error) {
 
 	if id < 1 {
-		return nil, ErrRecordnotFound
+		return nil, ErrRecordNotFound
 	}
 
 	query := `
@@ -117,7 +117,7 @@ func (i InstrumentModel) Get(id int64) (*Instrument, error) {
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return nil, ErrRecordnotFound
+			return nil, ErrRecordNotFound
 		default:
 			return nil, err
 		}
@@ -248,7 +248,7 @@ func (i InstrumentModel) Update(instrument *Instrument) error {
 func (i InstrumentModel) Delete(id int64) error {
 
 	if id < 1 {
-		return ErrRecordnotFound
+		return ErrRecordNotFound
 	}
 
 	query := `
@@ -271,7 +271,7 @@ func (i InstrumentModel) Delete(id int64) error {
 	}
 
 	if rowsAffected == 0 {
-		return ErrRecordnotFound
+		return ErrRecordNotFound
 	}
 
 	return nil

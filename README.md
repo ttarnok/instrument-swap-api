@@ -19,7 +19,7 @@ POST   /v1/swaps/{id}/accept // Accepts a swap request
 POST   /v1/swaps/{id}/reject // Rejects a swap request
 DELETE /v1/swaps/{id} // Ends an instrument swap
 
-POST   /v1/tokens // Return a new Access Token
+POST   /v1/tokens/authentication // Return a new Access Token
 POST   /v1/logout // Logs out the current user
 
 GET    /v1/liveliness

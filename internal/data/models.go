@@ -7,7 +7,7 @@ import (
 
 var (
 	// ErrRecordnotFound represents the miss of the requested data.
-	ErrRecordnotFound = errors.New("record not found")
+	ErrRecordNotFound = errors.New("record not found")
 	// ErrEditConflict reprezents a race condition error during updates
 	ErrEditConflict = errors.New("edit conflict")
 )
@@ -22,7 +22,8 @@ type Models struct {
 // NewModel rerturn a newly created model based on the specified database connection.
 func NewModel(db *sql.DB) Models {
 	return Models{
-		Instruments: InstrumentModel{DB: db},
-		Users:       UserModel{DB: db},
+		Instruments:    InstrumentModel{DB: db},
+		Users:          UserModel{DB: db},
+		StatefulTokens: StatefulTokenModel{DB: db},
 	}
 }

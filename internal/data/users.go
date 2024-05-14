@@ -125,6 +125,7 @@ func (m UserModel) GetByEmail(email string) (*User, error) {
 	err := m.DB.QueryRowContext(ctx, query, email).Scan(
 		&user.ID,
 		&user.CreatedAt,
+		&user.Name,
 		&user.Email,
 		&user.Password.hash,
 		&user.Activated,
@@ -134,7 +135,7 @@ func (m UserModel) GetByEmail(email string) (*User, error) {
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return nil, ErrRecordnotFound
+			return nil, ErrRecordNotFound
 		default:
 			return nil, err
 		}
@@ -196,7 +197,7 @@ func (m UserModel) GetForStatefulToken(tokenScope, tokenPlaintext string) (*User
 
 	var user User
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(
@@ -211,7 +212,7 @@ func (m UserModel) GetForStatefulToken(tokenScope, tokenPlaintext string) (*User
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return nil, ErrRecordnotFound
+			return nil, ErrRecordNotFound
 		default:
 			return nil, err
 		}

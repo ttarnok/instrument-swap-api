@@ -14,6 +14,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("DELETE /v1/instruments/{id}", app.deleteInstrumentHandler)
 
 	mux.HandleFunc("POST /v1/users", app.registerUserHandler)
+	mux.HandleFunc("POST /v1/tokens/authentication", app.createAuthenticationTokenHandler)
 
 	return app.recoverPanic(app.rateLimit(mux))
 }

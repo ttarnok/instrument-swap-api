@@ -65,7 +65,7 @@ func (app *application) showInstrumentHandler(w http.ResponseWriter, r *http.Req
 	instrument, err := app.models.Instruments.Get(id)
 	if err != nil {
 		switch {
-		case errors.Is(err, data.ErrRecordnotFound):
+		case errors.Is(err, data.ErrRecordNotFound):
 			app.notFoundResponse(w, r)
 			return
 		default:
@@ -148,7 +148,7 @@ func (app *application) updateInstrumentHandler(w http.ResponseWriter, r *http.R
 	instrument, err := app.models.Instruments.Get(id)
 	if err != nil {
 		switch {
-		case errors.Is(err, data.ErrRecordnotFound):
+		case errors.Is(err, data.ErrRecordNotFound):
 			app.notFoundResponse(w, r)
 		default:
 			app.serverErrorLogResponse(w, r, err)
@@ -235,7 +235,7 @@ func (app *application) deleteInstrumentHandler(w http.ResponseWriter, r *http.R
 	err = app.models.Instruments.Delete(id)
 	if err != nil {
 		switch {
-		case errors.Is(err, data.ErrRecordnotFound):
+		case errors.Is(err, data.ErrRecordNotFound):
 			app.notFoundResponse(w, r)
 		default:
 			app.serverErrorLogResponse(w, r, err)

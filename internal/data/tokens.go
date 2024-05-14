@@ -12,15 +12,17 @@ import (
 )
 
 const (
-	ScopeRefresh = "refresh"
+	ScopeRefresh        = "refresh"
+	ScopeActivation     = "activation"
+	ScopeAuthentication = "authentication"
 )
 
 type StatefulToken struct {
-	Plaintext string
-	Hash      []byte
-	UserId    int64
-	Expiry    time.Time
-	Scope     string
+	Plaintext string    `json:"token"`
+	Hash      []byte    `json:"-"`
+	UserId    int64     `json:"-"`
+	Expiry    time.Time `json:"expiry"`
+	Scope     string    `json:"-"`
 }
 
 func generateStatefulToken(userID int64, ttl time.Duration, scope string) (*StatefulToken, error) {
@@ -63,6 +65,7 @@ func (m StatefulTokenModel) New(userID int64, ttl time.Duration, scope string) (
 	}
 
 	err = m.Insert(token)
+
 	return token, err
 }
 

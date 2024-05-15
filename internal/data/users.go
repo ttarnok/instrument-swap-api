@@ -15,6 +15,9 @@ var (
 	ErrDuplicateEmail = errors.New("duplicate email")
 )
 
+// AnonymousUser represents an unauthenticated user.
+var AnonymousUser = &User{}
+
 type User struct {
 	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
@@ -23,6 +26,10 @@ type User struct {
 	Password  password  `json:"-"`
 	Activated bool      `json:"activated"`
 	Version   int       `json:"-"`
+}
+
+func (u *User) IsAnonymous() bool {
+	return u == AnonymousUser
 }
 
 type password struct {
@@ -193,7 +200,7 @@ func (m UserModel) GetForStatefulToken(tokenScope, tokenPlaintext string) (*User
 			AND tokens.scope = $2
 			AND tokens.expiry > $3`
 
-	args := []any{tokenHash, tokenScope, time.Now()}
+	args := []any{tokenHash[:], tokenScope, time.Now()}
 
 	var user User
 

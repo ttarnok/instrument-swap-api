@@ -1,5 +1,9 @@
 INSTRUMENT_SWAP_DB_DSN := "postgres://instrumentswap:s3cr3t@localhost/instrumentswap?sslmode=disable"
 
+# ============================================================================ #
+# HELPERS
+# ============================================================================ #
+
 ## help: prints makefile targets and their usage
 .PHONY: help
 help:
@@ -11,6 +15,10 @@ help:
 code/fmt:
 	@echo 'Formatting source code...'
 	@go fmt ./...
+
+# ============================================================================ #
+# DEVELOPMENT
+# ============================================================================ #
 
 ## build/api: builds the api binary from the source code
 .PHONY: build/api
@@ -59,3 +67,21 @@ db/migrations/force:
 db/migrations/new:
 	@echo 'Creating migration files for ${name}...'
 	migrate create -seq -ext=.sql -dir=./migrations ${name}
+
+# ============================================================================ #
+# QUALITY CONTROL
+# ============================================================================ #
+
+## audit: tidy dependencies and format, vet and test all code
+.PHONY: audit
+audit:
+	@echo 'Tidying and verifying module dependencies...'
+	go mod tidy
+	go mod verify
+	@echo 'Formatting code...'
+	go fmt ./...
+	@echo 'Vetting code...'
+	go vet ./...
+	staticcheck ./...
+	@echo 'Running tests...'
+	go test -race -vet=off ./...

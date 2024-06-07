@@ -24,7 +24,7 @@ code/fmt:
 .PHONY: build/api
 build/api: code/fmt
 	@echo 'Building the api binary...'
-	@go build -o=./bin/api ./cmd/api
+	@go build -ldflags="-s -w" -o=./bin/api ./cmd/api
 
 ## run/api: runs the cmd/api application
 .PHONY: run/api

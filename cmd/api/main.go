@@ -15,9 +15,12 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/ttarnok/instrument-swap-api/internal/data"
+	"github.com/ttarnok/instrument-swap-api/internal/vcs"
 )
 
-const version = "1.0.0"
+var (
+	version = vcs.Version()
+)
 
 type config struct {
 	port int
@@ -59,7 +62,14 @@ func main() {
 	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "Rate limiter maximum burst")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
 
+	displayVersion := flag.Bool("version", false, "Display version and exit")
+
 	flag.Parse()
+
+	if *displayVersion {
+		fmt.Printf("version:\t%s\n", version)
+		os.Exit(0)
+	}
 
 	// ----------------------------–----------------------------------------------
 	// Init logger

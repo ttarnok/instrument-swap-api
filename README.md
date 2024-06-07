@@ -1,5 +1,16 @@
 # instrument-swap-api
 
+A backend service which implements the necessary endpoints for a frontend
+that provides functionality for musicians to swap each other's instruments.
+
+## Dependencies
+
+- Go version 1.22
+
+## Setup
+
+## Usage
+
 GET    /v1/users // Show detailed list of users
 POST   /v1/users // Register a new user
 PUT    /v1/users/{id} // Update a user
@@ -27,7 +38,9 @@ GET    /v1/liveliness
 GET    /debug/vars // Display apprication metrics
 GET    /debug/pprof // Display debug infos
 
-# TODO List:
+## Release milestones
+
+### TODO List
 handle OPTIONS HTTP method
 create custom 405, 404 middleware
 consider using Cache-Control header response happypath/errorpath

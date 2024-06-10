@@ -23,6 +23,70 @@ func (app *application) listUsersHandler(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
+
+	id, err := app.extractIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	user, err := app.models.Users.GetByID(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorLogResponse(w, r, err)
+		}
+		return
+	}
+
+	var input struct {
+		Name  *string `json:"name"`
+		Email *string `json:"email"`
+	}
+
+	err = app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if input.Name != nil {
+		user.Name = *input.Name
+	}
+	if input.Email != nil {
+		user.Email = *input.Email
+	}
+
+	v := validator.New()
+
+	if data.ValidateUser(v, user); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	err = app.models.Users.Update(user)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		case errors.Is(err, data.ErrDuplicateEmail):
+			app.badRequestResponse(w, r, errors.New("email already exist"))
+		default:
+			app.serverErrorLogResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, nil)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+}
+
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {

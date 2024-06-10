@@ -8,7 +8,7 @@ import (
 func (app *application) routes() http.Handler {
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /v1/healthcheck", app.healthcheckHandler)
+	mux.HandleFunc("GET /v1/liveliness", app.livelinessHandler)
 
 	mux.HandleFunc("GET /v1/instruments", app.listInstrumentsHandler)
 	mux.HandleFunc("GET /v1/instruments/{id}", app.showInstrumentHandler)
@@ -18,6 +18,7 @@ func (app *application) routes() http.Handler {
 
 	mux.HandleFunc("GET /v1/users", app.listUsersHandler)
 	mux.HandleFunc("POST /v1/users", app.registerUserHandler)
+	mux.HandleFunc("PUT /v1/users/{id}", app.updateUserHandler)
 	mux.HandleFunc("POST /v1/tokens/authentication", app.createAuthenticationTokenHandler)
 
 	mux.Handle("GET /debug/vars", expvar.Handler())

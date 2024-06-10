@@ -14,7 +14,7 @@ that provides functionality for musicians to swap each other's instruments.
 - [X] GET    /v1/users // Show detailed list of users
 - [X] POST   /v1/users // Register a new user
 - [X] PUT    /v1/users/{id} // Update a user
-- [ ] DELETE /v1/users/{id} // Delete a user
+- [X] DELETE /v1/users/{id} // Delete a user
 - [ ] PUT    /v1/users/activated // Activate a new user
 - [ ] PUT    /v1/users/password // Update the password of the user
 

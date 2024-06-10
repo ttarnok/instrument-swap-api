@@ -268,6 +268,39 @@ func (m UserModel) Update(user *User) error {
 	return nil
 }
 
+func (m UserModel) Delete(id int64) error {
+
+	if id < 0 {
+		return ErrRecordNotFound
+	}
+
+	query := `
+		UPDATE users
+			SET is_deleted = true, deleted_at = NOW()
+		WHERE id = $1
+		  AND is_deleted = FALSE`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := m.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+
+	return nil
+
+}
+
 func (m UserModel) GetForStatefulToken(tokenScope, tokenPlaintext string) (*User, error) {
 	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
 

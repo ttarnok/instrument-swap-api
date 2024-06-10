@@ -16,6 +16,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("PATCH /v1/instruments/{id}", app.updateInstrumentHandler)
 	mux.HandleFunc("DELETE /v1/instruments/{id}", app.deleteInstrumentHandler)
 
+	mux.HandleFunc("GET /v1/users", app.listUsersHandler)
 	mux.HandleFunc("POST /v1/users", app.registerUserHandler)
 	mux.HandleFunc("POST /v1/tokens/authentication", app.createAuthenticationTokenHandler)
 

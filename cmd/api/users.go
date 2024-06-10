@@ -8,6 +8,21 @@ import (
 	"github.com/ttarnok/instrument-swap-api/internal/validator"
 )
 
+func (app *application) listUsersHandler(w http.ResponseWriter, r *http.Request) {
+
+	users, err := app.models.Users.GetAll()
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"users": users}, nil)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+}
+
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {

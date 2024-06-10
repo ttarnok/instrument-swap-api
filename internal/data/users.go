@@ -117,6 +117,53 @@ func (m UserModel) Insert(user *User) error {
 	return nil
 }
 
+func (m UserModel) GetAll() ([]*User, error) {
+	query := `
+	SELECT id, created_at, name, email, password_hash, activated, version
+		FROM users
+	WHERE is_deleted = FALSE`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := []*User{}
+
+	for rows.Next() {
+
+		var user User
+
+		err := rows.Scan(
+			&user.ID,
+			&user.CreatedAt,
+			&user.Name,
+			&user.Email,
+			&user.Password.hash,
+			&user.Activated,
+			&user.Version,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		users = append(users, &user)
+
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+
+}
+
 func (m UserModel) GetByEmail(email string) (*User, error) {
 	query := `
 		SELECT id, created_at, name, email, password_hash, activated, version

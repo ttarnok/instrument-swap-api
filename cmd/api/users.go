@@ -141,6 +141,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	v := validator.New()
 	if data.ValidateUser(v, user); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
+		return
 	}
 
 	err = app.models.Users.Insert(user)
@@ -161,4 +162,73 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+}
+
+func (app *application) updatePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.extractIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	var input struct {
+		Password    string `json:"password"`
+		NewPassword string `json:"new_password"`
+	}
+
+	err = app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	user, err := app.models.Users.GetByID(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorLogResponse(w, r, err)
+		}
+		return
+	}
+
+	matches, err := user.Password.Matches(input.Password)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+	if !matches {
+		app.badRequestResponse(w, r, errors.New("password does not match"))
+		return
+	}
+	err = user.Password.Set(input.NewPassword)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+	v := validator.New()
+	if data.ValidateUser(v, user); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	err = app.models.Users.Update(user)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorLogResponse(w, r, err)
+		}
+		return
+	}
+
+	env := envelope{"message": "password successfully updated"}
+	err = app.writeJSON(w, http.StatusOK, env, nil)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
 }

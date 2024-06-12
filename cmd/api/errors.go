@@ -39,6 +39,11 @@ func (app *application) serverErrorLogResponse(w http.ResponseWriter, r *http.Re
 
 }
 
+func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request) {
+	message := "the requested resource could not be found"
+	app.errorResponse(w, r, http.StatusNotFound, message)
+}
+
 // Helper to respond json validation errors.
 func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
 	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
@@ -53,8 +58,13 @@ func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Requ
 	app.errorResponse(w, r, http.StatusConflict, message)
 }
 
+func (app *application) swappedInstrumentResponse(w http.ResponseWriter, r *http.Request) {
+	message := "can not perform the operation on a swapped instrument"
+	app.errorResponse(w, r, http.StatusConflict, message)
+}
+
 func (app *application) rateLimitExcededResponse(w http.ResponseWriter, r *http.Request) {
-	message := "rate limit exceeded333"
+	message := "rate limit exceeded"
 	app.errorResponse(w, r, http.StatusTooManyRequests, message)
 }
 

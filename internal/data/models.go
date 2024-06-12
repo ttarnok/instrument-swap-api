@@ -10,6 +10,8 @@ var (
 	ErrRecordNotFound = errors.New("record not found")
 	// ErrEditConflict reprezents a race condition error during updates
 	ErrEditConflict = errors.New("edit conflict")
+	// ErrConflict represents a conflict due to the executed operation.
+	ErrConflict = errors.New("conflict")
 )
 
 // Model wraps all database models used in the application.

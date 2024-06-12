@@ -15,6 +15,7 @@ func (app *application) listInstrumentsHandler(w http.ResponseWriter, r *http.Re
 		Manufacturer string
 		Type         string
 		FamousOwners []string
+		OwnerUserId  int64
 		data.Filters
 	}
 
@@ -27,12 +28,14 @@ func (app *application) listInstrumentsHandler(w http.ResponseWriter, r *http.Re
 	input.Type = app.readQParamString(qs, "type", "")
 	input.FamousOwners = app.readQParamCSV(qs, "famous_owners", []string{})
 
+	input.OwnerUserId = int64(app.readQParamInt(qs, "owner_user_id", 0, v))
+
 	input.Page = app.readQParamInt(qs, "page", 1, v)
 	input.PageSize = app.readQParamInt(qs, "page_size", 20, v)
 
 	input.Sort = app.readQParamString(qs, "sort", "id")
-	input.SortSafeList = []string{"id", "name", "manufacturer", "type", "manufacture_year", "estimated_value",
-		"-id", "-name", "-manufacturer", "-type", "-manufacture_year", "-estimated_value"}
+	input.SortSafeList = []string{"id", "name", "manufacturer", "type", "manufacture_year", "estimated_value", "owner_user_id",
+		"-id", "-name", "-manufacturer", "-type", "-manufacture_year", "-estimated_value", "-owner_user_id"}
 
 	data.ValidateFilters(v, input.Filters)
 
@@ -41,7 +44,7 @@ func (app *application) listInstrumentsHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	instruments, metadata, err := app.models.Instruments.GetAll(input.Name, input.Manufacturer, input.Type, input.FamousOwners, input.Filters)
+	instruments, metadata, err := app.models.Instruments.GetAll(input.Name, input.Manufacturer, input.Type, input.FamousOwners, input.OwnerUserId, input.Filters)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
 		return
@@ -93,6 +96,7 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 		Condition       string   `json:"condition"`
 		Description     string   `json:"description"`
 		FamousOwners    []string `json:"famous_owners"`
+		OwnerUserID     int64    `json:"owner_user_id"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -109,6 +113,7 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 		EstimatedValue:  input.EstimatedValue,
 		Condition:       input.Condition,
 		FamousOwners:    input.FamousOwners,
+		OwnerUserId:     input.OwnerUserID,
 	}
 
 	v := validator.New()
@@ -116,6 +121,19 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 	if data.ValidateInstrument(v, instrument); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
+	}
+
+	_, err = app.models.Users.GetByID(input.OwnerUserID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			v.AddError("owner_user_id", "user does not exist")
+			app.failedValidationResponse(w, r, v.Errors)
+			return
+		default:
+			app.serverErrorLogResponse(w, r, err)
+			return
+		}
 	}
 
 	err = app.models.Instruments.Insert(instrument)
@@ -235,6 +253,8 @@ func (app *application) deleteInstrumentHandler(w http.ResponseWriter, r *http.R
 	err = app.models.Instruments.Delete(id)
 	if err != nil {
 		switch {
+		case errors.Is(err, data.ErrConflict):
+			app.swappedInstrumentResponse(w, r)
 		case errors.Is(err, data.ErrRecordNotFound):
 			app.notFoundResponse(w, r)
 		default:

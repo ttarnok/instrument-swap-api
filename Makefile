@@ -42,6 +42,12 @@ docker/compose/up:
 docker/compose/down:
 	docker-compose down
 
+## db/migrations/new name=fizz: creates a pair of new migration files with the name of fizz
+.PHONY: db/migrations/new
+db/migrations/new:
+	@echo 'Creating migration files for ${name}...'
+	migrate create -seq -ext=.sql -dir=./migrations ${name}
+
 ## db/migrations/up: apply all available database migrations
 .PHONY: db/migrations/up
 db/migrations/up:
@@ -62,11 +68,7 @@ db/migrations/version:
 db/migrations/force:
 	migrate -path=./migrations -database=$(INSTRUMENT_SWAP_DB_DSN) force ${version}
 
-## db/migrations/new name=fizz: creates a pair of new migration files with the name of fizz
-.PHONY: db/migrations/new
-db/migrations/new:
-	@echo 'Creating migration files for ${name}...'
-	migrate create -seq -ext=.sql -dir=./migrations ${name}
+
 
 # ============================================================================ #
 # QUALITY CONTROL

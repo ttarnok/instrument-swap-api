@@ -24,7 +24,6 @@ type Instrument struct {
 	Description     string    `json:"description"`
 	FamousOwners    []string  `json:"famous_owners"`
 	OwnerUserId     int64     `json:"owner_user_id"`
-	IsSwapped       bool      `json:"is_swapped"`
 	Version         int32     `json:"version"`
 }
 
@@ -95,7 +94,7 @@ func (i InstrumentModel) Get(id int64) (*Instrument, error) {
 
 	query := `
 		SELECT id, created_at, name, manufacturer, manufacture_year, type,
-			estimated_value, condition, description, famous_owners, owner_user_id, is_swapped, version
+			estimated_value, condition, description, famous_owners, owner_user_id, version
 			FROM instruments
 				WHERE id = $1
 					AND is_deleted = FALSE`
@@ -117,7 +116,6 @@ func (i InstrumentModel) Get(id int64) (*Instrument, error) {
 		&instrument.Description,
 		pq.Array(&instrument.FamousOwners),
 		&instrument.OwnerUserId,
-		&instrument.IsSwapped,
 		&instrument.Version,
 	)
 
@@ -138,7 +136,7 @@ func (i InstrumentModel) GetAll(name string, manufacturer string, iType string, 
 
 	query := fmt.Sprintf(`
 		SELECT count(*) over(), id, name, manufacturer, manufacture_year, type, estimated_value,
-			condition, description, famous_owners, owner_user_id, is_swapped, version
+			condition, description, famous_owners, owner_user_id, version
 		FROM instruments
 		WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
 		  AND (lower(manufacturer) = lower($2) OR $2 = '')
@@ -182,7 +180,6 @@ func (i InstrumentModel) GetAll(name string, manufacturer string, iType string, 
 			&instrument.Description,
 			pq.Array(&instrument.FamousOwners),
 			&instrument.OwnerUserId,
-			&instrument.IsSwapped,
 			&instrument.Version,
 		)
 
@@ -218,10 +215,9 @@ func (i InstrumentModel) Update(instrument *Instrument) error {
 					description = $7,
 					famous_owners = $8,
 					owner_user_id = $9,
-					is_swapped = $10,
 					version = version + 1
-		WHERE id = $11
-			AND version = $12
+		WHERE id = $10
+			AND version = $11
 		  AND is_deleted = FALSE
 		RETURNING version`
 
@@ -235,7 +231,6 @@ func (i InstrumentModel) Update(instrument *Instrument) error {
 		instrument.Description,
 		pq.Array(instrument.FamousOwners),
 		instrument.OwnerUserId,
-		instrument.IsSwapped,
 		instrument.ID,
 		instrument.Version,
 	}
@@ -266,25 +261,10 @@ func (i InstrumentModel) Delete(id int64) error {
 		return ErrRecordNotFound
 	}
 
-	query := `
-		SELECT is_swapped FROM instruments
-			WHERE id = $1
-			  AND is_deleted = FALSE`
-
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	var isSwapped bool
-	err := i.DB.QueryRowContext(ctx, query, id).Scan(&isSwapped)
-	if err != nil {
-		return err
-	}
-
-	if isSwapped {
-		return ErrConflict
-	}
-
-	query = `
+	query := `
 		UPDATE instruments
 			SET is_deleted = TRUE, deleted_at = NOW()
 		WHERE ID = $1

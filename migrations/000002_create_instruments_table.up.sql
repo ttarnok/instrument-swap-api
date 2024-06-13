@@ -12,6 +12,5 @@ CREATE TABLE IF NOT EXISTS instruments (
   description text,
   famous_owners text[],
   owner_user_id bigint NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-  is_swapped boolean NOT NULL DEFAULT FALSE,
   version integer NOT NULL DEFAULT 1
 );

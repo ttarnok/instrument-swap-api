@@ -24,6 +24,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("POST /v1/tokens/authentication", app.createAuthenticationTokenHandler)
 
 	mux.HandleFunc("GET /v1/swaps", app.listSwapsHandler)
+	mux.HandleFunc("POST /v1/swaps", app.createSwapHandler)
 
 	mux.Handle("GET /debug/vars", expvar.Handler())
 

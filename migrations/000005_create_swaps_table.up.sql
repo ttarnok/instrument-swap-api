@@ -8,5 +8,6 @@ CREATE TABLE IF NOT EXISTS swaps (
   is_rejected boolean NOT NULL DEFAULT FALSE,
   rejected_at timestamp(0) with time zone,
   is_ended boolean NOT NULL DEFAULT FALSE,
-  ended_at timestamp(0) with time zone
+  ended_at timestamp(0) with time zone,
+  version integer NOT NULL DEFAULT 1
 );

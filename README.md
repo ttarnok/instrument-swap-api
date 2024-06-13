@@ -25,6 +25,7 @@ that provides functionality for musicians to swap each other's instruments.
 - [X] DELETE /v1/instruments/{id} // Delete a specific instrument
 
 - [X] GET    /v1/swaps // Return the ongoing swap requests
+- [ ] GET    /v1/swaps/{id} // Get a specific swap by id
 - [ ] POST   /v1/swaps // Initiates a new swap request
 - [ ] POST   /v1/swaps/{id}/accept // Accepts a swap request
 - [ ] POST   /v1/swaps/{id}/reject // Rejects a swap request

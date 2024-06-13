@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/ttarnok/instrument-swap-api/internal/validator"
@@ -20,6 +21,7 @@ type Swap struct {
 	RejectedAt            *time.Time `json:"rejected_at"`
 	IsEnded               bool       `json:"is_ended"`
 	EndedAt               *time.Time `json:"ended_at"`
+	Version               int32      `json:"version"`
 }
 
 // ValidateSwap checks the validity of a swap,
@@ -40,7 +42,7 @@ func (s SwapModel) GetAll() ([]*Swap, error) {
 
 	query := `
 		SELECT id, created_at, requester_instrument_id, recipient_instrument_id, is_accepted,
-			accepted_at, is_rejected, rejected_at, is_ended, ended_at
+			accepted_at, is_rejected, rejected_at, is_ended, ended_at, version
 		FROM swaps
 		ORDER BY id`
 
@@ -71,6 +73,7 @@ func (s SwapModel) GetAll() ([]*Swap, error) {
 			&swap.RejectedAt,
 			&swap.IsEnded,
 			&swap.EndedAt,
+			&swap.Version,
 		)
 
 		if err != nil {
@@ -86,4 +89,61 @@ func (s SwapModel) GetAll() ([]*Swap, error) {
 	}
 
 	return swaps, nil
+}
+
+func (s SwapModel) GetByInstrumentId(id int64) (*Swap, error) {
+	if id < 1 {
+		return nil, ErrRecordNotFound
+	}
+
+	query := `
+		SELECT id, created_at, requester_instrument_id, recipient_instrument_id, is_accepted,
+			accepted_at, is_rejected, rejected_at, is_ended, ended_at, version
+		FROM swaps
+		WHERE (requester_instrument_id = $1 OR recipient_instrument_id = $2)
+		  AND is_ended = FALSE`
+
+	var swap Swap
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := s.DB.QueryRowContext(ctx, query, id, id).Scan(
+		&swap.ID,
+		&swap.CreatedAt,
+		&swap.RequesterInstrumentId,
+		&swap.RecipientInstrumentId,
+		&swap.IsAccepted,
+		&swap.AcceptedAt,
+		&swap.IsRejected,
+		&swap.RejectedAt,
+		&swap.IsEnded,
+		&swap.EndedAt,
+		&swap.Version,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &swap, nil
+}
+
+func (s SwapModel) Insert(swap *Swap) error {
+
+	query := `
+		INSERT INTO swaps (requester_instrument_id, recipient_instrument_id)
+			VALUES($1, $2)
+		RETURNING id, created_at, version`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return s.DB.
+		QueryRowContext(ctx, query, swap.RequesterInstrumentId, swap.RecipientInstrumentId).
+		Scan(&swap.ID, &swap.CreatedAt, &swap.Version)
 }

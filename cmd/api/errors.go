@@ -50,7 +50,7 @@ func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.
 }
 
 func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
-	app.errorResponse(w, r, http.StatusBadRequest, err)
+	app.errorResponse(w, r, http.StatusBadRequest, err.Error())
 }
 
 func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Request) {

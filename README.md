@@ -24,7 +24,7 @@ that provides functionality for musicians to swap each other's instruments.
 - [X] PATCH  /v1/instruments/{id} // Update a specific instrument
 - [X] DELETE /v1/instruments/{id} // Delete a specific instrument
 
-- [ ] GET    /v1/swaps // Return the ongoing swap requests
+- [X] GET    /v1/swaps // Return the ongoing swap requests
 - [ ] POST   /v1/swaps // Initiates a new swap request
 - [ ] POST   /v1/swaps/{id}/accept // Accepts a swap request
 - [ ] POST   /v1/swaps/{id}/reject // Rejects a swap request
@@ -33,7 +33,7 @@ that provides functionality for musicians to swap each other's instruments.
 - [ ] POST   /v1/tokens/authentication // Return a new Access Token
 - [ ] POST   /v1/logout // Logs out the current user
 
-- [ ] GET    /v1/liveliness
+- [X] GET    /v1/liveliness
 - [ ] GET    /v1/readyness
 
 - [X] GET    /debug/vars // Display apprication metrics

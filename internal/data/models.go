@@ -18,6 +18,7 @@ var (
 type Models struct {
 	Instruments    InstrumentModel
 	Users          UserModel
+	Swaps          SwapModel
 	StatefulTokens StatefulTokenModel
 }
 
@@ -26,6 +27,7 @@ func NewModel(db *sql.DB) Models {
 	return Models{
 		Instruments:    InstrumentModel{DB: db},
 		Users:          UserModel{DB: db},
+		Swaps:          SwapModel{DB: db},
 		StatefulTokens: StatefulTokenModel{DB: db},
 	}
 }

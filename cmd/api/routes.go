@@ -23,6 +23,8 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("DELETE /v1/users/{id}", app.deleteUserHandler)
 	mux.HandleFunc("POST /v1/tokens/authentication", app.createAuthenticationTokenHandler)
 
+	mux.HandleFunc("GET /v1/swaps", app.listSwapsHandler)
+
 	mux.Handle("GET /debug/vars", expvar.Handler())
 
 	return app.metrics(app.recoverPanic(app.enableCORS(app.rateLimit(app.authenticate(mux)))))

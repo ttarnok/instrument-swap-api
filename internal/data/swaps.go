@@ -190,3 +190,44 @@ func (s SwapModel) Insert(swap *Swap) error {
 		QueryRowContext(ctx, query, swap.RequesterInstrumentId, swap.RecipientInstrumentId).
 		Scan(&swap.ID, &swap.CreatedAt, &swap.Version)
 }
+
+func (s SwapModel) Update(swap *Swap) error {
+
+	query := `
+		UPDATE swaps
+			SET is_accepted = $1,
+					accepted_at = $2,
+					is_rejected = $3,
+					rejected_at = $4,
+					is_ended = $5,
+					ended_at = $6,
+					version = version + 1
+		WHERE id = $7
+		  AND version = $8
+		RETURNING version`
+
+	args := []any{
+		swap.IsAccepted,
+		swap.AcceptedAt,
+		swap.IsRejected,
+		swap.RejectedAt,
+		swap.IsEnded,
+		swap.EndedAt,
+		swap.ID,
+		swap.Version,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := s.DB.QueryRowContext(ctx, query, args...).Scan(&swap.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+	return nil
+}

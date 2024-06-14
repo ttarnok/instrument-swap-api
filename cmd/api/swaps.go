@@ -233,3 +233,44 @@ func (app *application) rejectSwapHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 }
+
+func (app *application) endSwapHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.extractIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	swap, err := app.models.Swaps.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+			return
+		default:
+			app.serverErrorLogResponse(w, r, err)
+			return
+		}
+	}
+
+	swap.IsEnded = true
+	now := time.Now()
+	swap.EndedAt = &now
+
+	err = app.models.Swaps.Update(swap)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorLogResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"swap": swap}, nil)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+}

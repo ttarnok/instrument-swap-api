@@ -29,7 +29,7 @@ that provides functionality for musicians to swap each other's instruments.
 - [X] POST   /v1/swaps // Initiates a new swap request
 - [X] POST   /v1/swaps/{id}/accept // Accepts a swap request
 - [X] POST   /v1/swaps/{id}/reject // Rejects a swap request
-- [ ] DELETE /v1/swaps/{id} // Ends an instrument swap
+- [X] DELETE /v1/swaps/{id} // Ends an instrument swap
 
 - [ ] POST   /v1/tokens/authentication // Return a new Access Token
 - [ ] POST   /v1/logout // Logs out the current user

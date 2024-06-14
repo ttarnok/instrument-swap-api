@@ -24,6 +24,34 @@ func (app *application) listSwapsHandler(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+func (app *application) showSwapHandler(w http.ResponseWriter, r *http.Request) {
+
+	id, err := app.extractIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	swap, err := app.models.Swaps.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+			return
+		default:
+			app.serverErrorLogResponse(w, r, err)
+			return
+		}
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"swap": swap}, nil)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+}
+
 func (app *application) createSwapHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {

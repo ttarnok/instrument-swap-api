@@ -1,5 +1,5 @@
-INSTRUMENT_SWAP_DB_DSN := "postgres://instrumentswap:s3cr3t@localhost/instrumentswap?sslmode=disable"
 
+include .envrc
 # ============================================================================ #
 # HELPERS
 # ============================================================================ #
@@ -30,7 +30,7 @@ build/api: code/fmt
 .PHONY: run/api
 run/api: build/api
 	@echo 'Running the application...'
-	@./bin/api -port=4000 -db-dsn=$(INSTRUMENT_SWAP_DB_DSN) -limiter-enabled=false
+	@./bin/api -port=4000 -db-dsn=$(INSTRUMENT_SWAP_DB_DSN) -jwt-secret=$(JWT_SECRET)
 
 ## docker/compose/up: runs docker compose up for the local dev db
 .PHONY: docker/compose/up

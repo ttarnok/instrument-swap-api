@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pascaldekloe/jwt"
 	"github.com/ttarnok/instrument-swap-api/internal/data"
-	"github.com/ttarnok/instrument-swap-api/internal/validator"
 	"golang.org/x/time/rate"
 )
 
@@ -109,14 +109,34 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 
 		token := headerParts[1]
 
-		v := validator.New()
-
-		if data.ValidateStatefulTokenPlantext(v, token, "auth_token"); !v.Valid() {
+		claims, err := jwt.HMACCheck([]byte(token), []byte(app.config.jwt.secret))
+		if err != nil {
 			app.invalidAuthenticationTokenResponse(w, r)
 			return
 		}
 
-		user, err := app.models.Users.GetForStatefulToken(data.ScopeAuthentication, token)
+		if !claims.Valid(time.Now()) {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		if claims.Issuer != "instrument-swap.example.example" {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		if !claims.AcceptAudience("instrument-swap.example.example") {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		userID, err := strconv.ParseInt(claims.Subject, 10, 64)
+		if err != nil {
+			app.serverErrorLogResponse(w, r, err)
+			return
+		}
+
+		user, err := app.models.Users.GetByID(userID)
 		if err != nil {
 			switch {
 			case errors.Is(err, data.ErrRecordNotFound):

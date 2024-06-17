@@ -5,13 +5,12 @@ import (
 	"errors"
 )
 
+// Generic data related errors.
+// These errors can be tested using errors.Is.
 var (
-	// ErrRecordnotFound represents the miss of the requested data.
-	ErrRecordNotFound = errors.New("record not found")
-	// ErrEditConflict reprezents a race condition error during updates
-	ErrEditConflict = errors.New("edit conflict")
-	// ErrConflict represents a conflict due to the executed operation.
-	ErrConflict = errors.New("conflict")
+	ErrRecordNotFound = errors.New("record not found") // "record not found"
+	ErrEditConflict   = errors.New("edit conflict")    // "edit conflict"
+	ErrConflict       = errors.New("conflict")         // "conflict"
 )
 
 // Model wraps all database models used in the application.

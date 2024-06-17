@@ -11,8 +11,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Generic user errors.
+// These errors can be tested using errors.Is.
 var (
-	ErrDuplicateEmail = errors.New("duplicate email")
+	ErrDuplicateEmail = errors.New("duplicate email") // "duplicate email"
 )
 
 // AnonymousUser represents an unauthenticated user.

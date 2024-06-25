@@ -56,8 +56,8 @@ func (app *application) showSwapHandler(w http.ResponseWriter, r *http.Request) 
 func (app *application) createSwapHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {
-		RequesterInstrumentId int64 `json:"requester_instrument_id"`
-		RecipientInstrumentId int64 `json:"recipient_instrument_id"`
+		RequesterInstrumentID int64 `json:"requester_instrument_id"`
+		RecipientInstrumentID int64 `json:"recipient_instrument_id"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -67,8 +67,8 @@ func (app *application) createSwapHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	swap := &data.Swap{
-		RequesterInstrumentId: input.RequesterInstrumentId,
-		RecipientInstrumentId: input.RecipientInstrumentId,
+		RequesterInstrumentID: input.RequesterInstrumentID,
+		RecipientInstrumentID: input.RecipientInstrumentID,
 	}
 
 	v := validator.New()
@@ -79,7 +79,7 @@ func (app *application) createSwapHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Check the instrument id-s are real.
-	_, err = app.models.Instruments.Get(input.RecipientInstrumentId)
+	_, err = app.models.Instruments.Get(input.RecipientInstrumentID)
 	if err != nil {
 		fmt.Println(err)
 		switch {
@@ -90,7 +90,7 @@ func (app *application) createSwapHandler(w http.ResponseWriter, r *http.Request
 		}
 		return
 	}
-	_, err = app.models.Instruments.Get(input.RequesterInstrumentId)
+	_, err = app.models.Instruments.Get(input.RequesterInstrumentID)
 	if err != nil {
 		fmt.Println(err)
 		switch {
@@ -103,21 +103,21 @@ func (app *application) createSwapHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	// Check the instrument are not swapped
-	rec_swap, err := app.models.Swaps.GetByInstrumentId(input.RecipientInstrumentId)
+	recSwap, err := app.models.Swaps.GetByInstrumentID(input.RecipientInstrumentID)
 	if err != nil && !errors.Is(err, data.ErrRecordNotFound) {
 		app.serverErrorLogResponse(w, r, err)
 		return
 	}
-	if rec_swap != nil {
+	if recSwap != nil {
 		app.badRequestResponse(w, r, errors.New("recipient instrument already in a swap"))
 		return
 	}
-	req_swap, err := app.models.Swaps.GetByInstrumentId(input.RequesterInstrumentId)
+	reqSwap, err := app.models.Swaps.GetByInstrumentID(input.RequesterInstrumentID)
 	if err != nil && !errors.Is(err, data.ErrRecordNotFound) {
 		app.serverErrorLogResponse(w, r, err)
 		return
 	}
-	if req_swap != nil {
+	if reqSwap != nil {
 		app.badRequestResponse(w, r, errors.New("requester instrument already in a swap"))
 		return
 	}

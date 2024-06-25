@@ -1,4 +1,4 @@
-// Package Validator helps to validate incoming json data.
+// Package validator helps to validate incoming json data.
 package validator
 
 import (

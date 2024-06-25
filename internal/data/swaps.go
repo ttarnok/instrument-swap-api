@@ -13,8 +13,8 @@ import (
 type Swap struct {
 	ID                    int64      `json:"id"`
 	CreatedAt             time.Time  `json:"created_at"`
-	RequesterInstrumentId int64      `json:"requester_instrument_id"`
-	RecipientInstrumentId int64      `json:"recipient_instrument_id"`
+	RequesterInstrumentID int64      `json:"requester_instrument_id"`
+	RecipientInstrumentID int64      `json:"recipient_instrument_id"`
 	IsAccepted            bool       `json:"is_accepted"`
 	AcceptedAt            *time.Time `json:"accepted_at"`
 	IsRejected            bool       `json:"is_rejected"`
@@ -27,18 +27,18 @@ type Swap struct {
 // ValidateSwap checks the validity of a swap,
 // adds all found validation errors into the validator.
 func ValidateSwap(v *validator.Validator, swap *Swap) {
-	v.Check(swap.RequesterInstrumentId != 0, "requester_instrument_id", "must not be empty")
-	v.Check(swap.RequesterInstrumentId >= 0, "requester_instrument_id", "must be greater than 0")
+	v.Check(swap.RequesterInstrumentID != 0, "requester_instrument_id", "must not be empty")
+	v.Check(swap.RequesterInstrumentID >= 0, "requester_instrument_id", "must be greater than 0")
 
-	v.Check(swap.RecipientInstrumentId != 0, "recipient_instrument_id", "must not be empty")
-	v.Check(swap.RecipientInstrumentId >= 0, "recipient_instrument_id", "must be greater than 0")
+	v.Check(swap.RecipientInstrumentID != 0, "recipient_instrument_id", "must not be empty")
+	v.Check(swap.RecipientInstrumentID >= 0, "recipient_instrument_id", "must be greater than 0")
 }
 
 type SwapModel struct {
 	DB *sql.DB
 }
 
-func (s SwapModel) GetAll() ([]*Swap, error) {
+func (s SwapModel) GetAll() (swaps []*Swap, err error) {
 
 	query := `
 		SELECT id, created_at, requester_instrument_id, recipient_instrument_id, is_accepted,
@@ -54,9 +54,14 @@ func (s SwapModel) GetAll() ([]*Swap, error) {
 		return nil, err
 	}
 
-	defer rows.Close()
+	defer func() {
+		errClose := rows.Close()
+		if err == nil {
+			err = errClose
+		}
+	}()
 
-	swaps := []*Swap{}
+	swaps = []*Swap{}
 
 	for rows.Next() {
 
@@ -65,8 +70,8 @@ func (s SwapModel) GetAll() ([]*Swap, error) {
 		err := rows.Scan(
 			&swap.ID,
 			&swap.CreatedAt,
-			&swap.RequesterInstrumentId,
-			&swap.RecipientInstrumentId,
+			&swap.RequesterInstrumentID,
+			&swap.RecipientInstrumentID,
 			&swap.IsAccepted,
 			&swap.AcceptedAt,
 			&swap.IsRejected,
@@ -112,8 +117,8 @@ func (s SwapModel) Get(id int64) (*Swap, error) {
 	err := s.DB.QueryRowContext(ctx, query, id).Scan(
 		&swap.ID,
 		&swap.CreatedAt,
-		&swap.RequesterInstrumentId,
-		&swap.RecipientInstrumentId,
+		&swap.RequesterInstrumentID,
+		&swap.RecipientInstrumentID,
 		&swap.IsAccepted,
 		&swap.AcceptedAt,
 		&swap.IsRejected,
@@ -134,7 +139,7 @@ func (s SwapModel) Get(id int64) (*Swap, error) {
 	return &swap, nil
 }
 
-func (s SwapModel) GetByInstrumentId(id int64) (*Swap, error) {
+func (s SwapModel) GetByInstrumentID(id int64) (*Swap, error) {
 	if id < 1 {
 		return nil, ErrRecordNotFound
 	}
@@ -154,8 +159,8 @@ func (s SwapModel) GetByInstrumentId(id int64) (*Swap, error) {
 	err := s.DB.QueryRowContext(ctx, query, id, id).Scan(
 		&swap.ID,
 		&swap.CreatedAt,
-		&swap.RequesterInstrumentId,
-		&swap.RecipientInstrumentId,
+		&swap.RequesterInstrumentID,
+		&swap.RecipientInstrumentID,
 		&swap.IsAccepted,
 		&swap.AcceptedAt,
 		&swap.IsRejected,
@@ -187,7 +192,7 @@ func (s SwapModel) Insert(swap *Swap) error {
 	defer cancel()
 
 	return s.DB.
-		QueryRowContext(ctx, query, swap.RequesterInstrumentId, swap.RecipientInstrumentId).
+		QueryRowContext(ctx, query, swap.RequesterInstrumentID, swap.RecipientInstrumentID).
 		Scan(&swap.ID, &swap.CreatedAt, &swap.Version)
 }
 

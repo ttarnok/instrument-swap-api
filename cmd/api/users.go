@@ -108,7 +108,11 @@ func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNoContent)
-	w.Write(nil)
+	_, err = w.Write(nil)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
 
 }
 

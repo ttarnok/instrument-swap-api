@@ -1,3 +1,4 @@
+// Package vcs handles versioning related functionality.
 package vcs
 
 import (

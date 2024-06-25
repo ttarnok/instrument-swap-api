@@ -119,7 +119,7 @@ func (m UserModel) Insert(user *User) error {
 	return nil
 }
 
-func (m UserModel) GetAll() ([]*User, error) {
+func (m UserModel) GetAll() (users []*User, err error) {
 	query := `
 	SELECT id, created_at, name, email, password_hash, activated, version
 		FROM users
@@ -132,9 +132,14 @@ func (m UserModel) GetAll() ([]*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		errClose := rows.Close()
+		if err == nil {
+			err = errClose
+		}
+	}()
 
-	users := []*User{}
+	users = []*User{}
 
 	for rows.Next() {
 

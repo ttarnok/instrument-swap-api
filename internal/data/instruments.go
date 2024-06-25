@@ -23,7 +23,7 @@ type Instrument struct {
 	Condition       string    `json:"condition"`
 	Description     string    `json:"description"`
 	FamousOwners    []string  `json:"famous_owners"`
-	OwnerUserId     int64     `json:"owner_user_id"`
+	OwnerUserID     int64     `json:"owner_user_id"`
 	Version         int32     `json:"version"`
 }
 
@@ -49,8 +49,8 @@ func ValidateInstrument(v *validator.Validator, instrument *Instrument) {
 	v.Check(instrument.Condition != "", "condition", "must not be empty")
 
 	v.Check(validator.Unique(instrument.FamousOwners), "famous_owners", "must be unique")
-	v.Check(instrument.OwnerUserId != 0, "owner_user_id", "must not be empty")
-	v.Check(instrument.OwnerUserId >= 0, "owner_user_id", "must be greater than 0")
+	v.Check(instrument.OwnerUserID != 0, "owner_user_id", "must not be empty")
+	v.Check(instrument.OwnerUserID >= 0, "owner_user_id", "must be greater than 0")
 }
 
 // InstrumentModel represents the database layer and provides functionality to interact with the database.
@@ -75,7 +75,7 @@ func (i InstrumentModel) Insert(instrument *Instrument) error {
 		instrument.Condition,
 		instrument.Description,
 		pq.Array(instrument.FamousOwners),
-		instrument.OwnerUserId,
+		instrument.OwnerUserID,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -115,7 +115,7 @@ func (i InstrumentModel) Get(id int64) (*Instrument, error) {
 		&instrument.Condition,
 		&instrument.Description,
 		pq.Array(&instrument.FamousOwners),
-		&instrument.OwnerUserId,
+		&instrument.OwnerUserID,
 		&instrument.Version,
 	)
 
@@ -132,8 +132,9 @@ func (i InstrumentModel) Get(id int64) (*Instrument, error) {
 }
 
 // GetAll returns all instrumets stored in the database.
-func (i InstrumentModel) GetAll(name string, manufacturer string, iType string, famousOwners []string, ownerUserID int64, filters Filters) ([]*Instrument, MetaData, error) {
+func (i InstrumentModel) GetAll(name string, manufacturer string, iType string, famousOwners []string, ownerUserID int64, filters Filters) (instruments []*Instrument, metaData MetaData, err error) {
 
+	//nolint:gosec
 	query := fmt.Sprintf(`
 		SELECT count(*) over(), id, name, manufacturer, manufacture_year, type, estimated_value,
 			condition, description, famous_owners, owner_user_id, version
@@ -159,10 +160,15 @@ func (i InstrumentModel) GetAll(name string, manufacturer string, iType string, 
 		return nil, MetaData{}, err
 	}
 
-	defer rows.Close()
+	defer func() {
+		errRows := rows.Close()
+		if err == nil {
+			err = errRows
+		}
+	}()
 
 	totalRecords := 0
-	instruments := []*Instrument{}
+	instruments = []*Instrument{}
 
 	for rows.Next() {
 
@@ -179,7 +185,7 @@ func (i InstrumentModel) GetAll(name string, manufacturer string, iType string, 
 			&instrument.Condition,
 			&instrument.Description,
 			pq.Array(&instrument.FamousOwners),
-			&instrument.OwnerUserId,
+			&instrument.OwnerUserID,
 			&instrument.Version,
 		)
 
@@ -230,7 +236,7 @@ func (i InstrumentModel) Update(instrument *Instrument) error {
 		instrument.Condition,
 		instrument.Description,
 		pq.Array(instrument.FamousOwners),
-		instrument.OwnerUserId,
+		instrument.OwnerUserID,
 		instrument.ID,
 		instrument.Version,
 	}

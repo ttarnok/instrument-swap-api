@@ -1,3 +1,4 @@
+// Package data contains the database access layer of the application.
 package data
 
 import (
@@ -13,7 +14,7 @@ var (
 	ErrConflict       = errors.New("conflict")         // "conflict"
 )
 
-// Model wraps all database models used in the application.
+// Models wraps all database models used in the application.
 type Models struct {
 	Instruments    InstrumentModel
 	Users          UserModel

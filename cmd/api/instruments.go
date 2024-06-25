@@ -15,7 +15,7 @@ func (app *application) listInstrumentsHandler(w http.ResponseWriter, r *http.Re
 		Manufacturer string
 		Type         string
 		FamousOwners []string
-		OwnerUserId  int64
+		OwnerUserID  int64
 		data.Filters
 	}
 
@@ -28,7 +28,7 @@ func (app *application) listInstrumentsHandler(w http.ResponseWriter, r *http.Re
 	input.Type = app.readQParamString(qs, "type", "")
 	input.FamousOwners = app.readQParamCSV(qs, "famous_owners", []string{})
 
-	input.OwnerUserId = int64(app.readQParamInt(qs, "owner_user_id", 0, v))
+	input.OwnerUserID = int64(app.readQParamInt(qs, "owner_user_id", 0, v))
 
 	input.Page = app.readQParamInt(qs, "page", 1, v)
 	input.PageSize = app.readQParamInt(qs, "page_size", 20, v)
@@ -44,7 +44,7 @@ func (app *application) listInstrumentsHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	instruments, metadata, err := app.models.Instruments.GetAll(input.Name, input.Manufacturer, input.Type, input.FamousOwners, input.OwnerUserId, input.Filters)
+	instruments, metadata, err := app.models.Instruments.GetAll(input.Name, input.Manufacturer, input.Type, input.FamousOwners, input.OwnerUserID, input.Filters)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
 		return
@@ -113,7 +113,7 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 		EstimatedValue:  input.EstimatedValue,
 		Condition:       input.Condition,
 		FamousOwners:    input.FamousOwners,
-		OwnerUserId:     input.OwnerUserID,
+		OwnerUserID:     input.OwnerUserID,
 	}
 
 	v := validator.New()
@@ -154,7 +154,7 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 
 }
 
-// JSON items with null values will be ignored and will remain unchanged
+// JSON items with null values will be ignored and will remain unchanged.
 func (app *application) updateInstrumentHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := app.extractIDParam(r)

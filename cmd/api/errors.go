@@ -5,8 +5,6 @@ import (
 )
 
 // Helper for logging errors in handlers.
-// TODO: consider to use error handling middleware.
-// TODO: consider to log trace id too.
 func (app *application) logError(r *http.Request, err error) {
 	var (
 		method = r.Method
@@ -16,7 +14,6 @@ func (app *application) logError(r *http.Request, err error) {
 }
 
 // Helper for sending JSON formatted error responses.
-// TODO: consider to use error handloing middleware.
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message any) {
 
 	env := envelope{"error": message}
@@ -29,7 +26,6 @@ func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, st
 }
 
 // Helper to respond internal server error to the client.
-// TODO: consider using error handling middleware.
 func (app *application) serverErrorLogResponse(w http.ResponseWriter, r *http.Request, err error) {
 
 	app.logError(r, err)

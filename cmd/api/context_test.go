@@ -9,6 +9,7 @@ import (
 	"github.com/ttarnok/instrument-swap-api/internal/data"
 )
 
+// TestContext tests the happy path of contextSetUser.
 func TestContext(t *testing.T) {
 	app := &application{}
 
@@ -36,6 +37,8 @@ func TestContext(t *testing.T) {
 	}
 }
 
+// TestContextPanic tests the panic path of contextSetUser,
+// when there is no User information in the provided context.
 func TestContextPanic(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {

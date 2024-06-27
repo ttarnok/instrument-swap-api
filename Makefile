@@ -89,4 +89,10 @@ audit:
 	@echo 'golangci-lint...'
 	golangci-lint run
 	@echo 'Running tests...'
-	go test -race -vet=off ./...
+	go test -count=1 -race -vet=off ./...
+
+## cover: generate test coverage report
+.PHONY: cover
+cover:
+	go test -covermode=count -coverprofile=profile.out ./...
+	go tool cover -html=profile.out

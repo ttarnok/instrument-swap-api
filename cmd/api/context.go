@@ -21,5 +21,7 @@ func (app *application) contextGetUser(r *http.Request) *data.User {
 	if !ok {
 		panic("missing user value in request context")
 	}
+
 	return user
+
 }

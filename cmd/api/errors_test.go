@@ -281,7 +281,7 @@ func TestFailedValidationResponse(t *testing.T) {
 // TestBadRequestResponse tests the happy path of badRequestResponse.
 func TestBadRequestResponse(t *testing.T) {
 	expectedStatusCode := http.StatusBadRequest
-	expectesErrorMessage := "test error"
+	expectesErrorMsg := "test error"
 
 	app := &application{}
 
@@ -294,7 +294,7 @@ func TestBadRequestResponse(t *testing.T) {
 
 	w := httptest.NewRecorder()
 
-	app.badRequestResponse(w, r, errors.New(expectesErrorMessage))
+	app.badRequestResponse(w, r, errors.New(expectesErrorMsg))
 
 	resp := w.Result()
 	body, _ := io.ReadAll(resp.Body)
@@ -308,8 +308,84 @@ func TestBadRequestResponse(t *testing.T) {
 		t.Fatal("cannot unmarshal json for text")
 	}
 
-	if jErrRes.Error != expectesErrorMessage {
-		t.Errorf(`expected response body "%#v", got "%#v"`, expectesErrorMessage, jErrRes.Error)
+	if jErrRes.Error != expectesErrorMsg {
+		t.Errorf(`expected response body "%#v", got "%#v"`, expectesErrorMsg, jErrRes.Error)
+	}
+
+	if resp.StatusCode != expectedStatusCode {
+		t.Errorf(`expected status code %d, goit %d`, expectedStatusCode, resp.StatusCode)
+	}
+}
+
+// TestEditConflictResponse tests the happy path for editConflictResponse.
+func TestEditConflictResponse(t *testing.T) {
+	expectesErrorMsg := "unable to update the record due to an edit conflict, please try again"
+	expectedStatusCode := http.StatusConflict
+
+	app := &application{}
+
+	url := "https://www.example.com/path"
+
+	r, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		t.Fatal("cannot set up request for testing")
+	}
+
+	w := httptest.NewRecorder()
+
+	app.editConflictResponse(w, r)
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	var jErrRes struct {
+		Error string `json:"error"`
+	}
+
+	err = json.Unmarshal(body, &jErrRes)
+	if err != nil {
+		t.Fatal("cannot unmarshal json for text")
+	}
+
+	if jErrRes.Error != expectesErrorMsg {
+		t.Errorf(`expected response body "%#v", got "%#v"`, expectesErrorMsg, jErrRes.Error)
+	}
+
+	if resp.StatusCode != expectedStatusCode {
+		t.Errorf(`expected status code %d, goit %d`, expectedStatusCode, resp.StatusCode)
+	}
+}
+
+// TestRateLimitExcededResponse tests the happy path for rateLimitExcededResponse.
+func TestRateLimitExcededResponse(t *testing.T) {
+	expectesErrorMsg := "rate limit exceeded"
+	expectedStatusCode := http.StatusTooManyRequests
+
+	app := &application{}
+
+	url := "https://www.example.com/path"
+
+	r, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		t.Fatal("cannot set up request for testing")
+	}
+
+	w := httptest.NewRecorder()
+
+	app.rateLimitExcededResponse(w, r)
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	var jErrRes struct {
+		Error string `json:"error"`
+	}
+
+	err = json.Unmarshal(body, &jErrRes)
+	if err != nil {
+		t.Fatal("cannot unmarshal json for text")
+	}
+
+	if jErrRes.Error != expectesErrorMsg {
+		t.Errorf(`expected response body "%#v", got "%#v"`, expectesErrorMsg, jErrRes.Error)
 	}
 
 	if resp.StatusCode != expectedStatusCode {

@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -192,6 +193,7 @@ func TestServerErrorLogResponse(t *testing.T) {
 
 }
 
+// TestNotFoundResponse tests the happy path of notFoundResponse.
 func TestNotFoundResponse(t *testing.T) {
 	expectedMsg := "the requested resource could not be found"
 	expectedStatusCode := http.StatusNotFound
@@ -227,6 +229,51 @@ func TestNotFoundResponse(t *testing.T) {
 
 	if resp.StatusCode != expectedStatusCode {
 		t.Errorf(`expected status code %d, got %d`, expectedStatusCode, resp.StatusCode)
+	}
+
+}
+
+// TestFailedValidationResponse tests the happy path of failedValidationResponse.
+func TestFailedValidationResponse(t *testing.T) {
+
+	expectedStatusCode := http.StatusUnprocessableEntity
+
+	validationErrors := make(map[string]string)
+
+	validationErrors["field1"] = "field1 has error"
+	validationErrors["field2"] = "field2 has error"
+
+	app := &application{}
+
+	url := "https://www.example.com/path"
+
+	r, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		t.Fatal("cannot set up request for testing")
+	}
+
+	w := httptest.NewRecorder()
+
+	app.failedValidationResponse(w, r, validationErrors)
+
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	var jErrRes struct {
+		Error map[string]string `json:"error"`
+	}
+
+	err = json.Unmarshal(body, &jErrRes)
+	if err != nil {
+		t.Fatal("cannot unmarshal json for text")
+	}
+
+	if !reflect.DeepEqual(jErrRes.Error, validationErrors) {
+		t.Errorf(`expected response body "%#v", got "%#v"`, validationErrors, jErrRes.Error)
+	}
+
+	if resp.StatusCode != expectedStatusCode {
+		t.Errorf(`expected status code %d, goit %d`, expectedStatusCode, resp.StatusCode)
 	}
 
 }

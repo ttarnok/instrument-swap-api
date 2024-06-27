@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
 
+// TestLogError tests the happy path of logError.
 func TestLogError(t *testing.T) {
 
 	testErr := errors.New("test error")
@@ -21,7 +24,6 @@ func TestLogError(t *testing.T) {
 	expectedURI := "/path"
 
 	url := fmt.Sprintf("https://www.example.com%s", expectedURI)
-	fmt.Println(url)
 
 	buf := &bytes.Buffer{}
 
@@ -30,7 +32,7 @@ func TestLogError(t *testing.T) {
 
 	r, err := http.NewRequest(exPectedMethod, url, nil)
 	if err != nil {
-		t.Fatal("can not set up request for testing")
+		t.Fatal("cannot set up request for testing")
 	}
 
 	app.logError(r, testErr)
@@ -44,9 +46,8 @@ func TestLogError(t *testing.T) {
 	}
 
 	err = json.Unmarshal(buf.Bytes(), &jRes)
-	fmt.Println(jRes)
 	if err != nil {
-		t.Fatal("can not marshall data for testing")
+		t.Fatal("cannot marshall data for testing")
 	}
 
 	if jRes.Level != expectedLevel {
@@ -63,6 +64,47 @@ func TestLogError(t *testing.T) {
 
 	if jRes.URI != expectedURI {
 		t.Errorf(`expected "%s", got "%s"`, expectedURI, jRes.URI)
+	}
+
+}
+
+// TestErrorResponse is testing the happy path of errorResponse.
+func TestErrorResponse(t *testing.T) {
+
+	expextedErrorMessage := "test error message"
+	expectedContentType := "application/json"
+
+	app := &application{}
+
+	r, err := http.NewRequest("GET", "https://www.example.com/path", nil)
+	if err != nil {
+		t.Fatal("cannot initiate a request for the test")
+	}
+	w := httptest.NewRecorder()
+
+	app.errorResponse(w, r, http.StatusInternalServerError, expextedErrorMessage)
+
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	var jRes struct {
+		Error string `json:"error"`
+	}
+	err = json.Unmarshal(body, &jRes)
+	if err != nil {
+		t.Fatal("cannot unmarshal json for text")
+	}
+
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf(`expected status code %d, got %d`, http.StatusInternalServerError, resp.StatusCode)
+	}
+
+	if resp.Header.Get("Content-Type") != expectedContentType {
+		t.Errorf(`expected content type "%s", got "%s"`, expectedContentType, resp.Header.Get("Content-Type"))
+	}
+
+	if jRes.Error != expextedErrorMessage {
+		t.Errorf(`expected errors message "%s", got "%s"`, expextedErrorMessage, jRes.Error)
 	}
 
 }

@@ -392,3 +392,41 @@ func TestRateLimitExcededResponse(t *testing.T) {
 		t.Errorf(`expected status code %d, goit %d`, expectedStatusCode, resp.StatusCode)
 	}
 }
+
+// TestInvalidCredentialsResponse tests the happy path for invalidCredentialsResponse.
+func TestInvalidCredentialsResponse(t *testing.T) {
+	expectesErrorMsg := "invalid authentication credentials"
+	expectedStatusCode := http.StatusUnauthorized
+
+	app := &application{}
+
+	url := "https://www.example.com/path"
+
+	r, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		t.Fatal("cannot set up request for testing")
+	}
+
+	w := httptest.NewRecorder()
+
+	app.invalidCredentialsResponse(w, r)
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	var jErrRes struct {
+		Error string `json:"error"`
+	}
+
+	err = json.Unmarshal(body, &jErrRes)
+	if err != nil {
+		t.Fatal("cannot unmarshal json for text")
+	}
+
+	if jErrRes.Error != expectesErrorMsg {
+		t.Errorf(`expected response body "%#v", got "%#v"`, expectesErrorMsg, jErrRes.Error)
+	}
+
+	if resp.StatusCode != expectedStatusCode {
+		t.Errorf(`expected status code %d, goit %d`, expectedStatusCode, resp.StatusCode)
+	}
+}

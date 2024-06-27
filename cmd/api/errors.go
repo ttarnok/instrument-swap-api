@@ -58,12 +58,6 @@ func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Requ
 	app.errorResponse(w, r, http.StatusConflict, message)
 }
 
-// swappedInstrumentResponse...
-func (app *application) swappedInstrumentResponse(w http.ResponseWriter, r *http.Request) {
-	message := "can not perform the operation on a swapped instrument"
-	app.errorResponse(w, r, http.StatusConflict, message)
-}
-
 // rateLimitExcededResponse sends TooManyRequests to the client.
 func (app *application) rateLimitExcededResponse(w http.ResponseWriter, r *http.Request) {
 	message := "rate limit exceeded"

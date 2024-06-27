@@ -254,7 +254,7 @@ func (app *application) deleteInstrumentHandler(w http.ResponseWriter, r *http.R
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrConflict):
-			app.swappedInstrumentResponse(w, r)
+			app.badRequestResponse(w, r, errors.New("can not perform the operation on a swapped instrument"))
 		case errors.Is(err, data.ErrRecordNotFound):
 			app.notFoundResponse(w, r)
 		default:

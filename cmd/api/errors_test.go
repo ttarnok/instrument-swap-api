@@ -172,6 +172,7 @@ func TestServerErrorLogResponse(t *testing.T) {
 	var jErrRes struct {
 		Error string `json:"error"`
 	}
+
 	err = json.Unmarshal(body, &jErrRes)
 	if err != nil {
 		t.Fatal("cannot unmarshal json for text")
@@ -187,6 +188,45 @@ func TestServerErrorLogResponse(t *testing.T) {
 
 	if jErrRes.Error != expextedErrorMsg {
 		t.Errorf(`expected errors message "%s", got "%s"`, expextedErrorMsg, jErrRes.Error)
+	}
+
+}
+
+func TestNotFoundResponse(t *testing.T) {
+	expectedMsg := "the requested resource could not be found"
+	expectedStatusCode := http.StatusNotFound
+
+	app := &application{}
+
+	url := "https://www.example.com/path"
+
+	r, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		t.Fatal("cannot set up request for testing")
+	}
+
+	w := httptest.NewRecorder()
+
+	app.notFoundResponse(w, r)
+
+	resp := w.Result()
+	body, _ := io.ReadAll(resp.Body)
+
+	var jErrRes struct {
+		Error string `json:"error"`
+	}
+
+	err = json.Unmarshal(body, &jErrRes)
+	if err != nil {
+		t.Fatal("cannot unmarshal json for text")
+	}
+
+	if jErrRes.Error != expectedMsg {
+		t.Errorf(`expected response body "%s", got "%s"`, expectedMsg, jErrRes.Error)
+	}
+
+	if resp.StatusCode != expectedStatusCode {
+		t.Errorf(`expected status code %d, got %d`, expectedStatusCode, resp.StatusCode)
 	}
 
 }

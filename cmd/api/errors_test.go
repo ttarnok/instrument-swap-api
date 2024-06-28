@@ -14,6 +14,115 @@ import (
 	"time"
 )
 
+// TestErrorRespnses tests simple error-response handlers related helper functions.
+func TestErrorRespnses(t *testing.T) {
+	app := &application{}
+
+	tests := []struct {
+		name              string
+		f                 func(http.ResponseWriter, *http.Request)
+		expectedMsg       string
+		expectedStausCode int
+		expectedHeaders   map[string]string
+	}{
+		{
+			name:              "notFoundResponse",
+			f:                 app.notFoundResponse,
+			expectedMsg:       "the requested resource could not be found",
+			expectedStausCode: http.StatusNotFound,
+		},
+		{
+			name:              "editConflictResponse",
+			f:                 app.editConflictResponse,
+			expectedMsg:       "unable to update the record due to an edit conflict, please try again",
+			expectedStausCode: http.StatusConflict,
+		},
+		{
+			name:              "rateLimitExcededResponse",
+			f:                 app.rateLimitExcededResponse,
+			expectedMsg:       "rate limit exceeded",
+			expectedStausCode: http.StatusTooManyRequests,
+		},
+		{
+			name:              "invalidCredentialsResponse",
+			f:                 app.invalidCredentialsResponse,
+			expectedMsg:       "invalid authentication credentials",
+			expectedStausCode: http.StatusUnauthorized,
+		},
+		{
+			name:              "invalidAuthenticationTokenResponse",
+			f:                 app.invalidAuthenticationTokenResponse,
+			expectedMsg:       "invalid or missing authentication token",
+			expectedStausCode: http.StatusUnauthorized,
+			expectedHeaders:   map[string]string{"WWW-Authenticate": "Bearer"},
+		},
+		{
+			name:              "authenticationRequiredResponse",
+			f:                 app.authenticationRequiredResponse,
+			expectedMsg:       "you must be authenticated to access this resource",
+			expectedStausCode: http.StatusUnauthorized,
+		},
+		{
+			name:              "inactiveAccountResponse",
+			f:                 app.inactiveAccountResponse,
+			expectedMsg:       "your user account must be activated to access this resource",
+			expectedStausCode: http.StatusForbidden,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			url := "https://www.example.com/path"
+
+			r, err := http.NewRequest("GET", url, nil)
+			if err != nil {
+				t.Fatal("cannot set up request for testing")
+			}
+
+			rr := httptest.NewRecorder()
+
+			tt.f(rr, r)
+			resp := rr.Result()
+			defer func() {
+				err := resp.Body.Close()
+				if err != nil {
+					t.Fatal(err)
+				}
+			}()
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var jErrRes struct {
+				Error string `json:"error"`
+			}
+
+			err = json.Unmarshal(body, &jErrRes)
+			if err != nil {
+				t.Fatal("cannot unmarshal json for text")
+			}
+
+			if jErrRes.Error != tt.expectedMsg {
+				t.Errorf(`expected response body %#v, got %#v`, tt.expectedMsg, jErrRes.Error)
+			}
+
+			if resp.StatusCode != tt.expectedStausCode {
+				t.Errorf(`expected status code %d, goit %d`, tt.expectedStausCode, resp.StatusCode)
+			}
+
+			if tt.expectedHeaders != nil {
+				for hk, hv := range tt.expectedHeaders {
+					if resp.Header.Get(hk) != hv {
+						t.Errorf(`expected header walue "%v", got "%v"`, hv, resp.Header.Get(hk))
+					}
+				}
+			}
+		})
+	}
+}
+
 // TestLogError tests the happy path of logError.
 func TestLogError(t *testing.T) {
 

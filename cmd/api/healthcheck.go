@@ -4,6 +4,7 @@ import (
 	"net/http"
 )
 
+// livelinessHandler handles liveliness checks.
 func (app *application) livelinessHandler(w http.ResponseWriter, r *http.Request) {
 	data := map[string]string{
 		"status":      "available",

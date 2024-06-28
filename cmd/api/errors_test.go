@@ -81,12 +81,21 @@ func TestErrorResponse(t *testing.T) {
 	if err != nil {
 		t.Fatal("cannot initiate a request for the test")
 	}
-	w := httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 
-	app.errorResponse(w, r, http.StatusInternalServerError, expextedErrorMsg)
+	app.errorResponse(rr, r, http.StatusInternalServerError, expextedErrorMsg)
 
-	resp := w.Result()
-	body, _ := io.ReadAll(resp.Body)
+	resp := rr.Result()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var jRes struct {
 		Error string `json:"error"`
@@ -134,9 +143,9 @@ func TestServerErrorLogResponse(t *testing.T) {
 		t.Fatal("cannot set up request for testing")
 	}
 
-	w := httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 
-	app.serverErrorLogResponse(w, r, testErr)
+	app.serverErrorLogResponse(rr, r, testErr)
 
 	var jRes struct {
 		Time   time.Time `json:"time"`
@@ -167,8 +176,17 @@ func TestServerErrorLogResponse(t *testing.T) {
 		t.Errorf(`expected "%s", got "%s"`, expectedURI, jRes.URI)
 	}
 
-	resp := w.Result()
-	body, _ := io.ReadAll(resp.Body)
+	resp := rr.Result()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var jErrRes struct {
 		Error string `json:"error"`
@@ -207,12 +225,21 @@ func TestNotFoundResponse(t *testing.T) {
 		t.Fatal("cannot set up request for testing")
 	}
 
-	w := httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 
-	app.notFoundResponse(w, r)
+	app.notFoundResponse(rr, r)
 
-	resp := w.Result()
-	body, _ := io.ReadAll(resp.Body)
+	resp := rr.Result()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var jErrRes struct {
 		Error string `json:"error"`
@@ -252,12 +279,21 @@ func TestFailedValidationResponse(t *testing.T) {
 		t.Fatal("cannot set up request for testing")
 	}
 
-	w := httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 
-	app.failedValidationResponse(w, r, validationErrors)
+	app.failedValidationResponse(rr, r, validationErrors)
 
-	resp := w.Result()
-	body, _ := io.ReadAll(resp.Body)
+	resp := rr.Result()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var jErrRes struct {
 		Error map[string]string `json:"error"`
@@ -292,12 +328,21 @@ func TestBadRequestResponse(t *testing.T) {
 		t.Fatal("cannot set up request for testing")
 	}
 
-	w := httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 
-	app.badRequestResponse(w, r, errors.New(expectesErrorMsg))
+	app.badRequestResponse(rr, r, errors.New(expectesErrorMsg))
 
-	resp := w.Result()
-	body, _ := io.ReadAll(resp.Body)
+	resp := rr.Result()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var jErrRes struct {
 		Error string `json:"error"`
@@ -331,11 +376,20 @@ func TestEditConflictResponse(t *testing.T) {
 		t.Fatal("cannot set up request for testing")
 	}
 
-	w := httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 
-	app.editConflictResponse(w, r)
-	resp := w.Result()
-	body, _ := io.ReadAll(resp.Body)
+	app.editConflictResponse(rr, r)
+	resp := rr.Result()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var jErrRes struct {
 		Error string `json:"error"`
@@ -369,11 +423,20 @@ func TestRateLimitExcededResponse(t *testing.T) {
 		t.Fatal("cannot set up request for testing")
 	}
 
-	w := httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 
-	app.rateLimitExcededResponse(w, r)
-	resp := w.Result()
-	body, _ := io.ReadAll(resp.Body)
+	app.rateLimitExcededResponse(rr, r)
+	resp := rr.Result()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var jErrRes struct {
 		Error string `json:"error"`
@@ -407,11 +470,20 @@ func TestInvalidCredentialsResponse(t *testing.T) {
 		t.Fatal("cannot set up request for testing")
 	}
 
-	w := httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 
-	app.invalidCredentialsResponse(w, r)
-	resp := w.Result()
-	body, _ := io.ReadAll(resp.Body)
+	app.invalidCredentialsResponse(rr, r)
+	resp := rr.Result()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var jErrRes struct {
 		Error string `json:"error"`
@@ -446,11 +518,20 @@ func TestInvalidAuthenticationTokenResponse(t *testing.T) {
 		t.Fatal("cannot set up request for testing")
 	}
 
-	w := httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 
-	app.invalidAuthenticationTokenResponse(w, r)
-	resp := w.Result()
-	body, _ := io.ReadAll(resp.Body)
+	app.invalidAuthenticationTokenResponse(rr, r)
+	resp := rr.Result()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var jErrRes struct {
 		Error string `json:"error"`
@@ -488,11 +569,20 @@ func TestAuthenticationRequiredResponse(t *testing.T) {
 		t.Fatal("cannot set up request for testing")
 	}
 
-	w := httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 
-	app.authenticationRequiredResponse(w, r)
-	resp := w.Result()
-	body, _ := io.ReadAll(resp.Body)
+	app.authenticationRequiredResponse(rr, r)
+	resp := rr.Result()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var jErrRes struct {
 		Error string `json:"error"`
@@ -526,11 +616,20 @@ func TestInactiveAccountResponse(t *testing.T) {
 		t.Fatal("cannot set up request for testing")
 	}
 
-	w := httptest.NewRecorder()
+	rr := httptest.NewRecorder()
 
-	app.inactiveAccountResponse(w, r)
-	resp := w.Result()
-	body, _ := io.ReadAll(resp.Body)
+	app.inactiveAccountResponse(rr, r)
+	resp := rr.Result()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var jErrRes struct {
 		Error string `json:"error"`

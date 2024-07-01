@@ -128,19 +128,26 @@ func TestLogError(t *testing.T) {
 
 	testErr := errors.New("test error")
 
-	expectedLevel := "ERROR"
-	expextedMsg := testErr.Error()
-	exPectedMethod := "GET"
-	expectedURI := "/path"
+	expected := struct {
+		Level  string
+		Msg    string
+		Method string
+		URI    string
+	}{
+		Level:  "ERROR",
+		Msg:    testErr.Error(),
+		Method: "GET",
+		URI:    "/path",
+	}
 
-	url := fmt.Sprintf("https://www.example.com%s", expectedURI)
+	url := fmt.Sprintf("https://www.example.com%s", expected.URI)
 
 	buf := &bytes.Buffer{}
 
 	logger := slog.New(slog.NewJSONHandler(buf, &slog.HandlerOptions{}))
 	app := &application{logger: logger}
 
-	r, err := http.NewRequest(exPectedMethod, url, nil)
+	r, err := http.NewRequest(expected.Method, url, nil)
 	if err != nil {
 		t.Fatal("cannot set up request for testing")
 	}
@@ -160,20 +167,20 @@ func TestLogError(t *testing.T) {
 		t.Fatal("cannot marshall data for testing")
 	}
 
-	if jRes.Level != expectedLevel {
-		t.Errorf(`expected "%s", got "%s"`, expectedLevel, jRes.Level)
+	if jRes.Level != expected.Level {
+		t.Errorf(`expected "%s", got "%s"`, expected.Level, jRes.Level)
 	}
 
-	if jRes.Msg != expextedMsg {
-		t.Errorf(`expected "%s", got "%s"`, expextedMsg, jRes.Msg)
+	if jRes.Msg != expected.Msg {
+		t.Errorf(`expected "%s", got "%s"`, expected.Msg, jRes.Msg)
 	}
 
-	if jRes.Method != exPectedMethod {
-		t.Errorf(`expected "%s", got "%s"`, exPectedMethod, jRes.Method)
+	if jRes.Method != expected.Method {
+		t.Errorf(`expected "%s", got "%s"`, expected.Method, jRes.Method)
 	}
 
-	if jRes.URI != expectedURI {
-		t.Errorf(`expected "%s", got "%s"`, expectedURI, jRes.URI)
+	if jRes.URI != expected.URI {
+		t.Errorf(`expected "%s", got "%s"`, expected.URI, jRes.URI)
 	}
 
 }
@@ -181,8 +188,13 @@ func TestLogError(t *testing.T) {
 // TestErrorResponse is testing the happy path of errorResponse.
 func TestErrorResponse(t *testing.T) {
 
-	expextedErrorMsg := "test error message"
-	expectedContentType := "application/json"
+	expected := struct {
+		ErrorMsg    string
+		ContentType string
+	}{
+		ErrorMsg:    "test error message",
+		ContentType: "application/json",
+	}
 
 	app := &application{}
 
@@ -192,7 +204,7 @@ func TestErrorResponse(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 
-	app.errorResponse(rr, r, http.StatusInternalServerError, expextedErrorMsg)
+	app.errorResponse(rr, r, http.StatusInternalServerError, expected.ErrorMsg)
 
 	resp := rr.Result()
 	defer func() {
@@ -218,12 +230,12 @@ func TestErrorResponse(t *testing.T) {
 		t.Errorf(`expected status code %d, got %d`, http.StatusInternalServerError, resp.StatusCode)
 	}
 
-	if resp.Header.Get("Content-Type") != expectedContentType {
-		t.Errorf(`expected content type "%s", got "%s"`, expectedContentType, resp.Header.Get("Content-Type"))
+	if resp.Header.Get("Content-Type") != expected.ContentType {
+		t.Errorf(`expected content type "%s", got "%s"`, expected.ContentType, resp.Header.Get("Content-Type"))
 	}
 
-	if jRes.Error != expextedErrorMsg {
-		t.Errorf(`expected errors message "%s", got "%s"`, expextedErrorMsg, jRes.Error)
+	if jRes.Error != expected.ErrorMsg {
+		t.Errorf(`expected errors message "%s", got "%s"`, expected.ErrorMsg, jRes.Error)
 	}
 
 }
@@ -232,22 +244,30 @@ func TestErrorResponse(t *testing.T) {
 func TestServerErrorLogResponse(t *testing.T) {
 	testErr := errors.New("test error")
 
-	expectedLevel := "ERROR"
-	expextedMsg := testErr.Error()
-	exPectedMethod := "GET"
-	expectedURI := "/path"
+	expected := struct {
+		Level       string
+		Msg         string
+		Method      string
+		URI         string
+		ErrorMsg    string
+		ContentType string
+	}{
+		Level:       "ERROR",
+		Msg:         testErr.Error(),
+		Method:      "GET",
+		URI:         "/path",
+		ErrorMsg:    "the server encountered a problem and could not process your request",
+		ContentType: "application/json",
+	}
 
-	expextedErrorMsg := "the server encountered a problem and could not process your request"
-	expectedContentType := "application/json"
-
-	url := fmt.Sprintf("https://www.example.com%s", expectedURI)
+	url := fmt.Sprintf("https://www.example.com%s", expected.URI)
 
 	buf := &bytes.Buffer{}
 
 	logger := slog.New(slog.NewJSONHandler(buf, &slog.HandlerOptions{}))
 	app := &application{logger: logger}
 
-	r, err := http.NewRequest(exPectedMethod, url, nil)
+	r, err := http.NewRequest(expected.Method, url, nil)
 	if err != nil {
 		t.Fatal("cannot set up request for testing")
 	}
@@ -269,20 +289,20 @@ func TestServerErrorLogResponse(t *testing.T) {
 		t.Fatal("cannot marshall data for testing")
 	}
 
-	if jRes.Level != expectedLevel {
-		t.Errorf(`expected "%s", got "%s"`, expectedLevel, jRes.Level)
+	if jRes.Level != expected.Level {
+		t.Errorf(`expected "%s", got "%s"`, expected.Level, jRes.Level)
 	}
 
-	if jRes.Msg != expextedMsg {
-		t.Errorf(`expected "%s", got "%s"`, expextedMsg, jRes.Msg)
+	if jRes.Msg != expected.Msg {
+		t.Errorf(`expected "%s", got "%s"`, expected.Msg, jRes.Msg)
 	}
 
-	if jRes.Method != exPectedMethod {
-		t.Errorf(`expected "%s", got "%s"`, exPectedMethod, jRes.Method)
+	if jRes.Method != expected.Method {
+		t.Errorf(`expected "%s", got "%s"`, expected.Method, jRes.Method)
 	}
 
-	if jRes.URI != expectedURI {
-		t.Errorf(`expected "%s", got "%s"`, expectedURI, jRes.URI)
+	if jRes.URI != expected.URI {
+		t.Errorf(`expected "%s", got "%s"`, expected.URI, jRes.URI)
 	}
 
 	resp := rr.Result()
@@ -310,61 +330,12 @@ func TestServerErrorLogResponse(t *testing.T) {
 		t.Errorf(`expected status code %d, got %d`, http.StatusInternalServerError, resp.StatusCode)
 	}
 
-	if resp.Header.Get("Content-Type") != expectedContentType {
-		t.Errorf(`expected content type "%s", got "%s"`, expectedContentType, resp.Header.Get("Content-Type"))
+	if resp.Header.Get("Content-Type") != expected.ContentType {
+		t.Errorf(`expected content type "%s", got "%s"`, expected.ContentType, resp.Header.Get("Content-Type"))
 	}
 
-	if jErrRes.Error != expextedErrorMsg {
-		t.Errorf(`expected errors message "%s", got "%s"`, expextedErrorMsg, jErrRes.Error)
-	}
-
-}
-
-// TestNotFoundResponse tests the happy path of notFoundResponse.
-func TestNotFoundResponse(t *testing.T) {
-	expectedMsg := "the requested resource could not be found"
-	expectedStatusCode := http.StatusNotFound
-
-	app := &application{}
-
-	url := "https://www.example.com/path"
-
-	r, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		t.Fatal("cannot set up request for testing")
-	}
-
-	rr := httptest.NewRecorder()
-
-	app.notFoundResponse(rr, r)
-
-	resp := rr.Result()
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var jErrRes struct {
-		Error string `json:"error"`
-	}
-
-	err = json.Unmarshal(body, &jErrRes)
-	if err != nil {
-		t.Fatal("cannot unmarshal json for text")
-	}
-
-	if jErrRes.Error != expectedMsg {
-		t.Errorf(`expected response body "%s", got "%s"`, expectedMsg, jErrRes.Error)
-	}
-
-	if resp.StatusCode != expectedStatusCode {
-		t.Errorf(`expected status code %d, got %d`, expectedStatusCode, resp.StatusCode)
+	if jErrRes.Error != expected.ErrorMsg {
+		t.Errorf(`expected errors message "%s", got "%s"`, expected.ErrorMsg, jErrRes.Error)
 	}
 
 }
@@ -425,8 +396,14 @@ func TestFailedValidationResponse(t *testing.T) {
 
 // TestBadRequestResponse tests the happy path of badRequestResponse.
 func TestBadRequestResponse(t *testing.T) {
-	expectedStatusCode := http.StatusBadRequest
-	expectesErrorMsg := "test error"
+
+	expected := struct {
+		StatusCode int
+		ErrorMsg   string
+	}{
+		StatusCode: http.StatusBadRequest,
+		ErrorMsg:   "test error",
+	}
 
 	app := &application{}
 
@@ -439,7 +416,7 @@ func TestBadRequestResponse(t *testing.T) {
 
 	rr := httptest.NewRecorder()
 
-	app.badRequestResponse(rr, r, errors.New(expectesErrorMsg))
+	app.badRequestResponse(rr, r, errors.New(expected.ErrorMsg))
 
 	resp := rr.Result()
 	defer func() {
@@ -462,298 +439,11 @@ func TestBadRequestResponse(t *testing.T) {
 		t.Fatal("cannot unmarshal json for text")
 	}
 
-	if jErrRes.Error != expectesErrorMsg {
-		t.Errorf(`expected response body "%#v", got "%#v"`, expectesErrorMsg, jErrRes.Error)
+	if jErrRes.Error != expected.ErrorMsg {
+		t.Errorf(`expected response body "%#v", got "%#v"`, expected.ErrorMsg, jErrRes.Error)
 	}
 
-	if resp.StatusCode != expectedStatusCode {
-		t.Errorf(`expected status code %d, goit %d`, expectedStatusCode, resp.StatusCode)
-	}
-}
-
-// TestEditConflictResponse tests the happy path for editConflictResponse.
-func TestEditConflictResponse(t *testing.T) {
-	expectesErrorMsg := "unable to update the record due to an edit conflict, please try again"
-	expectedStatusCode := http.StatusConflict
-
-	app := &application{}
-
-	url := "https://www.example.com/path"
-
-	r, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		t.Fatal("cannot set up request for testing")
-	}
-
-	rr := httptest.NewRecorder()
-
-	app.editConflictResponse(rr, r)
-	resp := rr.Result()
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var jErrRes struct {
-		Error string `json:"error"`
-	}
-
-	err = json.Unmarshal(body, &jErrRes)
-	if err != nil {
-		t.Fatal("cannot unmarshal json for text")
-	}
-
-	if jErrRes.Error != expectesErrorMsg {
-		t.Errorf(`expected response body "%#v", got "%#v"`, expectesErrorMsg, jErrRes.Error)
-	}
-
-	if resp.StatusCode != expectedStatusCode {
-		t.Errorf(`expected status code %d, goit %d`, expectedStatusCode, resp.StatusCode)
-	}
-}
-
-// TestRateLimitExcededResponse tests the happy path for rateLimitExcededResponse.
-func TestRateLimitExcededResponse(t *testing.T) {
-	expectesErrorMsg := "rate limit exceeded"
-	expectedStatusCode := http.StatusTooManyRequests
-
-	app := &application{}
-
-	url := "https://www.example.com/path"
-
-	r, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		t.Fatal("cannot set up request for testing")
-	}
-
-	rr := httptest.NewRecorder()
-
-	app.rateLimitExcededResponse(rr, r)
-	resp := rr.Result()
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var jErrRes struct {
-		Error string `json:"error"`
-	}
-
-	err = json.Unmarshal(body, &jErrRes)
-	if err != nil {
-		t.Fatal("cannot unmarshal json for text")
-	}
-
-	if jErrRes.Error != expectesErrorMsg {
-		t.Errorf(`expected response body "%#v", got "%#v"`, expectesErrorMsg, jErrRes.Error)
-	}
-
-	if resp.StatusCode != expectedStatusCode {
-		t.Errorf(`expected status code %d, goit %d`, expectedStatusCode, resp.StatusCode)
-	}
-}
-
-// TestInvalidCredentialsResponse tests the happy path for invalidCredentialsResponse.
-func TestInvalidCredentialsResponse(t *testing.T) {
-	expectesErrorMsg := "invalid authentication credentials"
-	expectedStatusCode := http.StatusUnauthorized
-
-	app := &application{}
-
-	url := "https://www.example.com/path"
-
-	r, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		t.Fatal("cannot set up request for testing")
-	}
-
-	rr := httptest.NewRecorder()
-
-	app.invalidCredentialsResponse(rr, r)
-	resp := rr.Result()
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var jErrRes struct {
-		Error string `json:"error"`
-	}
-
-	err = json.Unmarshal(body, &jErrRes)
-	if err != nil {
-		t.Fatal("cannot unmarshal json for text")
-	}
-
-	if jErrRes.Error != expectesErrorMsg {
-		t.Errorf(`expected response body "%#v", got "%#v"`, expectesErrorMsg, jErrRes.Error)
-	}
-
-	if resp.StatusCode != expectedStatusCode {
-		t.Errorf(`expected status code %d, goit %d`, expectedStatusCode, resp.StatusCode)
-	}
-}
-
-// TestInvalidAuthenticationTokenResponse tests the happy path for invalidAuthenticationTokenResponse.
-func TestInvalidAuthenticationTokenResponse(t *testing.T) {
-	expectesErrorMsg := "invalid or missing authentication token"
-	expectedStatusCode := http.StatusUnauthorized
-	expectedWWWAuthenticate := "Bearer"
-
-	app := &application{}
-
-	url := "https://www.example.com/path"
-
-	r, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		t.Fatal("cannot set up request for testing")
-	}
-
-	rr := httptest.NewRecorder()
-
-	app.invalidAuthenticationTokenResponse(rr, r)
-	resp := rr.Result()
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var jErrRes struct {
-		Error string `json:"error"`
-	}
-
-	err = json.Unmarshal(body, &jErrRes)
-	if err != nil {
-		t.Fatal("cannot unmarshal json for text")
-	}
-
-	if jErrRes.Error != expectesErrorMsg {
-		t.Errorf(`expected response body "%#v", got "%#v"`, expectesErrorMsg, jErrRes.Error)
-	}
-
-	if resp.StatusCode != expectedStatusCode {
-		t.Errorf(`expected status code %d, goit %d`, expectedStatusCode, resp.StatusCode)
-	}
-
-	if resp.Header.Get("WWW-Authenticate") != expectedWWWAuthenticate {
-		t.Errorf(`expected WWW-Authenticate header "%s", got "%s"`, expectedWWWAuthenticate, resp.Header.Get("WWW-Authenticate"))
-	}
-}
-
-// TestAuthenticationRequiredResponse tests the happy path for AuthenticationRequiredResponse.
-func TestAuthenticationRequiredResponse(t *testing.T) {
-	expectesErrorMsg := "you must be authenticated to access this resource"
-	expectedStatusCode := http.StatusUnauthorized
-
-	app := &application{}
-
-	url := "https://www.example.com/path"
-
-	r, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		t.Fatal("cannot set up request for testing")
-	}
-
-	rr := httptest.NewRecorder()
-
-	app.authenticationRequiredResponse(rr, r)
-	resp := rr.Result()
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var jErrRes struct {
-		Error string `json:"error"`
-	}
-
-	err = json.Unmarshal(body, &jErrRes)
-	if err != nil {
-		t.Fatal("cannot unmarshal json for text")
-	}
-
-	if jErrRes.Error != expectesErrorMsg {
-		t.Errorf(`expected response body "%#v", got "%#v"`, expectesErrorMsg, jErrRes.Error)
-	}
-
-	if resp.StatusCode != expectedStatusCode {
-		t.Errorf(`expected status code %d, goit %d`, expectedStatusCode, resp.StatusCode)
-	}
-}
-
-// TestInactiveAccountResponse tests the happy path for inactiveAccountResponse.
-func TestInactiveAccountResponse(t *testing.T) {
-	expectesErrorMsg := "your user account must be activated to access this resource"
-	expectedStatusCode := http.StatusForbidden
-
-	app := &application{}
-
-	url := "https://www.example.com/path"
-
-	r, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		t.Fatal("cannot set up request for testing")
-	}
-
-	rr := httptest.NewRecorder()
-
-	app.inactiveAccountResponse(rr, r)
-	resp := rr.Result()
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var jErrRes struct {
-		Error string `json:"error"`
-	}
-
-	err = json.Unmarshal(body, &jErrRes)
-	if err != nil {
-		t.Fatal("cannot unmarshal json for text")
-	}
-
-	if jErrRes.Error != expectesErrorMsg {
-		t.Errorf(`expected response body "%#v", got "%#v"`, expectesErrorMsg, jErrRes.Error)
-	}
-
-	if resp.StatusCode != expectedStatusCode {
-		t.Errorf(`expected status code %d, goit %d`, expectedStatusCode, resp.StatusCode)
+	if resp.StatusCode != expected.StatusCode {
+		t.Errorf(`expected status code %d, goit %d`, expected.StatusCode, resp.StatusCode)
 	}
 }

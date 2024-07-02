@@ -8,6 +8,7 @@ import (
 	"maps"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"slices"
 	"testing"
 )
@@ -195,5 +196,54 @@ func TestReadJSON(t *testing.T) {
 			}
 
 		})
+	}
+}
+
+// TestReadQParamString tests the functionality of readQParamString.
+func TestReadQParamString(t *testing.T) {
+
+	tests := []struct {
+		name         string
+		setKey       string
+		retrieveKey  string
+		value        string
+		defaultValue string
+	}{
+		{
+			name:         "happy path",
+			setKey:       "name",
+			retrieveKey:  "name",
+			value:        "Ava",
+			defaultValue: "N/A",
+		},
+		{
+			name:         "default value",
+			setKey:       "name",
+			retrieveKey:  "name2",
+			value:        "Ava",
+			defaultValue: "N/A",
+		},
+	}
+
+	for _, tt := range tests {
+
+		t.Run(tt.name, func(t *testing.T) {
+
+			v := url.Values{}
+			v.Set(tt.setKey, "Ava")
+
+			app := &application{}
+
+			paramValue := app.readQParamString(v, tt.retrieveKey, tt.defaultValue)
+
+			if tt.setKey == tt.retrieveKey && paramValue != tt.value {
+				t.Errorf(`expected value "%s", got "%s"`, tt.value, paramValue)
+			}
+			if tt.setKey != tt.retrieveKey && paramValue != tt.defaultValue {
+				t.Errorf(`expected default value "%s", got "%s"`, tt.defaultValue, paramValue)
+			}
+
+		})
+
 	}
 }

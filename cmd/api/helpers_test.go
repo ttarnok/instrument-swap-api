@@ -11,6 +11,8 @@ import (
 	"net/url"
 	"slices"
 	"testing"
+
+	"github.com/ttarnok/instrument-swap-api/internal/validator"
 )
 
 // TestExtractIDParam implements unit tests to test extractIDParam.
@@ -203,25 +205,28 @@ func TestReadJSON(t *testing.T) {
 func TestReadQParamString(t *testing.T) {
 
 	tests := []struct {
-		name         string
-		setKey       string
-		retrieveKey  string
-		value        string
-		defaultValue string
+		name          string
+		setKey        string
+		retrieveKey   string
+		inputValue    string
+		expectedValue string
+		defaultValue  string
 	}{
 		{
-			name:         "happy path",
-			setKey:       "name",
-			retrieveKey:  "name",
-			value:        "Ava",
-			defaultValue: "N/A",
+			name:          "happy path",
+			setKey:        "name",
+			retrieveKey:   "name",
+			inputValue:    "Ava",
+			expectedValue: "Ava",
+			defaultValue:  "N/A",
 		},
 		{
-			name:         "default value",
-			setKey:       "name",
-			retrieveKey:  "name2",
-			value:        "Ava",
-			defaultValue: "N/A",
+			name:          "default value",
+			setKey:        "name",
+			retrieveKey:   "name2",
+			inputValue:    "",
+			expectedValue: "N/A",
+			defaultValue:  "N/A",
 		},
 	}
 
@@ -230,17 +235,14 @@ func TestReadQParamString(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			v := url.Values{}
-			v.Set(tt.setKey, "Ava")
+			v.Set(tt.setKey, tt.inputValue)
 
 			app := &application{}
 
 			paramValue := app.readQParamString(v, tt.retrieveKey, tt.defaultValue)
 
-			if tt.setKey == tt.retrieveKey && paramValue != tt.value {
-				t.Errorf(`expected value "%s", got "%s"`, tt.value, paramValue)
-			}
-			if tt.setKey != tt.retrieveKey && paramValue != tt.defaultValue {
-				t.Errorf(`expected default value "%s", got "%s"`, tt.defaultValue, paramValue)
+			if paramValue != tt.expectedValue {
+				t.Errorf(`expected value "%s", got "%s"`, tt.expectedValue, paramValue)
 			}
 
 		})
@@ -311,4 +313,75 @@ func TestReadQParamCSV(t *testing.T) {
 
 	}
 
+}
+
+// TestReadQParamInt unit tests the functionality of readQParamInt.
+func TestReadQParamInt(t *testing.T) {
+
+	tests := []struct {
+		name           string
+		setKey         string
+		retrieveKey    string
+		inputValue     string
+		expectedValue  int
+		defaultValue   int
+		shouldValidate bool
+	}{
+		{
+			name:           "happy path",
+			setKey:         "name",
+			retrieveKey:    "name",
+			inputValue:     "13",
+			expectedValue:  13,
+			defaultValue:   0,
+			shouldValidate: false,
+		},
+		{
+			name:           "default value",
+			setKey:         "name",
+			retrieveKey:    "name2",
+			inputValue:     "0",
+			expectedValue:  13,
+			defaultValue:   13,
+			shouldValidate: false,
+		},
+		{
+			name:           "should contain error",
+			setKey:         "name",
+			retrieveKey:    "name",
+			inputValue:     "not a number",
+			expectedValue:  0,
+			defaultValue:   0,
+			shouldValidate: true,
+		},
+	}
+
+	for _, tt := range tests {
+
+		t.Run(tt.name, func(t *testing.T) {
+
+			values := url.Values{}
+			values.Set(tt.setKey, tt.inputValue)
+
+			app := &application{}
+
+			validator := validator.New()
+
+			paramValue := app.readQParamInt(values, tt.retrieveKey, tt.defaultValue, validator)
+
+			if paramValue != tt.expectedValue {
+				t.Errorf(`expected value %d, got %d`, tt.expectedValue, paramValue)
+			}
+
+			if tt.shouldValidate && validator.Valid() {
+				t.Error(`should comtain validation errors`)
+			}
+
+			if !tt.shouldValidate && !validator.Valid() {
+				t.Errorf(`should not contain validation errors, got %#v`, validator.Errors)
+			}
+
+		})
+
+	}
 }

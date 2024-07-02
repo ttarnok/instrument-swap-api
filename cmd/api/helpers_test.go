@@ -247,3 +247,68 @@ func TestReadQParamString(t *testing.T) {
 
 	}
 }
+
+// TestReadQParamCSV tests the functionality of readQParamCSV.
+func TestReadQParamCSV(t *testing.T) {
+	tests := []struct {
+		name          string
+		setKey        string
+		retrieveKey   string
+		value         string
+		expectedValue []string
+		defaultValue  []string
+	}{
+		{
+			name:          "happy path",
+			setKey:        "name",
+			retrieveKey:   "name",
+			value:         "Ava",
+			expectedValue: []string{"Ava"},
+			defaultValue:  nil,
+		},
+		{
+			name:          "multiple values",
+			setKey:        "name",
+			retrieveKey:   "name",
+			value:         "Ava,Bela,Cloe",
+			expectedValue: []string{"Ava", "Bela", "Cloe"},
+			defaultValue:  nil,
+		},
+		{
+			name:          "default value",
+			setKey:        "name",
+			retrieveKey:   "name2",
+			value:         "Ava",
+			expectedValue: []string{"N/A"},
+			defaultValue:  []string{"N/A"},
+		},
+		{
+			name:          "multiple default values",
+			setKey:        "name",
+			retrieveKey:   "name2",
+			value:         "",
+			expectedValue: []string{"N/A,N/A,N/A,N/A"},
+			defaultValue:  []string{"N/A,N/A,N/A,N/A"},
+		},
+	}
+
+	for _, tt := range tests {
+
+		t.Run(tt.name, func(t *testing.T) {
+
+			v := url.Values{}
+			v.Set(tt.setKey, tt.value)
+
+			app := &application{}
+
+			paramValues := app.readQParamCSV(v, tt.retrieveKey, tt.defaultValue)
+
+			if !slices.Equal(paramValues, tt.expectedValue) {
+				t.Errorf(`expected value %#v, got %#v`, tt.expectedValue, paramValues)
+			}
+
+		})
+
+	}
+
+}

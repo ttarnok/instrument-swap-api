@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -97,58 +98,102 @@ func TestWriteJSON(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		rr := httptest.NewRecorder()
+		t.Run(tt.name, func(t *testing.T) {
 
-		app := application{}
+			rr := httptest.NewRecorder()
 
-		err := app.writeJSON(rr, tt.statusCode, tt.data, tt.headers)
-		// Error check.
-		if err != nil && !tt.expectedError {
-			t.Errorf(`not expected error, got %#v`, err)
-		}
-		if err == nil && tt.expectedError {
-			t.Error("expected error")
-		}
+			app := application{}
 
-		resp := rr.Result()
+			err := app.writeJSON(rr, tt.statusCode, tt.data, tt.headers)
+			// Error check.
+			if err != nil && !tt.expectedError {
+				t.Errorf(`not expected error, got %#v`, err)
+			}
+			if err == nil && tt.expectedError {
+				t.Error("expected error")
+			}
 
-		// Status Code check.
-		if resp.StatusCode != tt.statusCode {
-			t.Errorf(`expected status code %d, got %d`, tt.statusCode, resp.StatusCode)
-		}
+			resp := rr.Result()
 
-		// Body check.
-		defer func() {
-			err := resp.Body.Close()
+			// Status Code check.
+			if resp.StatusCode != tt.statusCode {
+				t.Errorf(`expected status code %d, got %d`, tt.statusCode, resp.StatusCode)
+			}
+
+			// Body check.
+			defer func() {
+				err := resp.Body.Close()
+				if err != nil {
+					t.Fatal(err)
+				}
+			}()
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				t.Fatal(err)
 			}
-		}()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
 
-		mapBody := make(envelope)
-		err = json.Unmarshal(body, &mapBody)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !maps.Equal(tt.data, mapBody) {
-			t.Errorf(`expected message body %#v, got %#v`, tt.data, mapBody)
-		}
-
-		// Headers check.
-		for k, v := range tt.headers {
-			header := resp.Header.Values(k)
-			if !slices.Equal(header, v) {
-				t.Errorf(`expected header %#v, got %#v`, v, header)
+			mapBody := make(envelope)
+			err = json.Unmarshal(body, &mapBody)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !maps.Equal(tt.data, mapBody) {
+				t.Errorf(`expected message body %#v, got %#v`, tt.data, mapBody)
 			}
 
-		}
-		// Must contain: "Content-Type", "application/json".
-		if resp.Header.Get("Content-Type") != "application/json" {
-			t.Error(`the response must contain "Content-Type": "application/json" header`)
-		}
+			// Headers check.
+			for k, v := range tt.headers {
+				header := resp.Header.Values(k)
+				if !slices.Equal(header, v) {
+					t.Errorf(`expected header %#v, got %#v`, v, header)
+				}
+
+			}
+			// Must contain: "Content-Type", "application/json".
+			if resp.Header.Get("Content-Type") != "application/json" {
+				t.Error(`the response must contain "Content-Type": "application/json" header`)
+			}
+		})
+	}
+}
+
+// TestReadJSON implements unit tests for readJSON.
+func TestReadJSON(t *testing.T) {
+
+	tests := []struct {
+		name   string
+		source map[string]string
+		target map[string]string
+	}{
+		{
+			name:   "happy path",
+			source: map[string]string{"key1": "value1", "key2": "value2"},
+			target: make(map[string]string),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			rr := httptest.NewRecorder()
+
+			bs, err := json.Marshal(tt.source)
+			if err != nil {
+				t.Fatal(err)
+			}
+			req := httptest.NewRequest("GET", "/", bytes.NewBuffer(bs))
+
+			app := application{}
+
+			err = app.readJSON(rr, req, &tt.target)
+			if err != nil {
+				t.Error(err)
+			}
+
+			if !maps.Equal(tt.source, tt.target) {
+				t.Errorf(`expected value %#v, got %#v`, tt.source, tt.target)
+			}
+
+		})
 	}
 }

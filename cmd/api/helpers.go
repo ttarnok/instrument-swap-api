@@ -13,8 +13,10 @@ import (
 	"github.com/ttarnok/instrument-swap-api/internal/validator"
 )
 
+// type envelope is used to envelope json responses.
 type envelope map[string]any
 
+// extractIDParam is used to extract id parameters from request paths.
 func (app *application) extractIDParam(r *http.Request) (int64, error) {
 	// Read and Validate params
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -24,6 +26,7 @@ func (app *application) extractIDParam(r *http.Request) (int64, error) {
 	return id, nil
 }
 
+// writeJSON is used to send a JSON response to the clinet.
 func (app *application) writeJSON(w http.ResponseWriter, status int, data envelope, headers http.Header) error {
 
 	js, err := json.Marshal(data)
@@ -44,6 +47,7 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data envelo
 	return nil
 }
 
+// readJSON is used to extract JSON data from a client request.
 func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 
 	// 1Mb
@@ -103,6 +107,7 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 	return nil
 }
 
+// readQParamString is used to extract string typed query string from requests.
 func (app *application) readQParamString(qs url.Values, key string, defaultValue string) string {
 
 	s := qs.Get(key)
@@ -113,6 +118,7 @@ func (app *application) readQParamString(qs url.Values, key string, defaultValue
 	return s
 }
 
+// readQParamCSV is used to extract csv typed query string from requests.
 func (app *application) readQParamCSV(qs url.Values, key string, defaultValue []string) []string {
 
 	csv := qs.Get(key)
@@ -124,6 +130,7 @@ func (app *application) readQParamCSV(qs url.Values, key string, defaultValue []
 	return strings.Split(csv, ",")
 }
 
+// readQParamInt is used to extract integer typed query string from requests.
 func (app *application) readQParamInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
 
 	sv := qs.Get(key)

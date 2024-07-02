@@ -1,9 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 )
 
@@ -68,4 +72,83 @@ func TestExtractIDParam(t *testing.T) {
 
 	}
 
+}
+
+// TestWriteJSON tests the functionality of writeJSON.
+func TestWriteJSON(t *testing.T) {
+	tests := []struct {
+		name          string
+		statusCode    int
+		data          envelope
+		headers       http.Header
+		expectedError bool
+	}{
+		{
+			name:          "happy path",
+			statusCode:    http.StatusOK,
+			data:          envelope{"data": "message"},
+			headers:       map[string][]string{"Vary": {"Value1", "Value2"}},
+			expectedError: false,
+		},
+		{
+			name:       "status not found",
+			statusCode: http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		rr := httptest.NewRecorder()
+
+		app := application{}
+
+		err := app.writeJSON(rr, tt.statusCode, tt.data, tt.headers)
+		// Error check.
+		if err != nil && !tt.expectedError {
+			t.Errorf(`not expected error, got %#v`, err)
+		}
+		if err == nil && tt.expectedError {
+			t.Error("expected error")
+		}
+
+		resp := rr.Result()
+
+		// Status Code check.
+		if resp.StatusCode != tt.statusCode {
+			t.Errorf(`expected status code %d, got %d`, tt.statusCode, resp.StatusCode)
+		}
+
+		// Body check.
+		defer func() {
+			err := resp.Body.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+		}()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		mapBody := make(envelope)
+		err = json.Unmarshal(body, &mapBody)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !maps.Equal(tt.data, mapBody) {
+			t.Errorf(`expected message body %#v, got %#v`, tt.data, mapBody)
+		}
+
+		// Headers check.
+		for k, v := range tt.headers {
+			header := resp.Header.Values(k)
+			if !slices.Equal(header, v) {
+				t.Errorf(`expected header %#v, got %#v`, v, header)
+			}
+
+		}
+		// Must contain: "Content-Type", "application/json".
+		if resp.Header.Get("Content-Type") != "application/json" {
+			t.Error(`the response must contain "Content-Type": "application/json" header`)
+		}
+	}
 }

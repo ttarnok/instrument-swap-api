@@ -12,8 +12,16 @@ type InstrumentModelMock struct {
 	db []*data.Instrument
 }
 
+// NewEmptyInstrumentModelMock returns a new InstrumentModelMock with empty internal store.
 func NewEmptyInstrumentModelMock() *InstrumentModelMock {
 	return &InstrumentModelMock{}
+}
+
+// NewNonEmptyInstrumentModelMock returns a new InstrumentModelMock filled with the input data.
+func NewNonEmptyInstrumentModelMock(input []*data.Instrument) *InstrumentModelMock {
+	return &InstrumentModelMock{
+		db: input,
+	}
 }
 
 // Insert inserts an instrument into the mocked database.

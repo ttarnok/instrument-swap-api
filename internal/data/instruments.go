@@ -14,7 +14,7 @@ import (
 // Instrument represents an instrument record in the apprication.
 type Instrument struct {
 	ID              int64     `json:"id"`
-	CreatedAt       time.Time `json:"-"`
+	CreatedAt       time.Time `json:"created_at"`
 	Name            string    `json:"name"`
 	Manufacturer    string    `json:"manufacturer"`
 	ManufactureYear int32     `json:"manufacture_year"`

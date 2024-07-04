@@ -59,7 +59,7 @@ type InstrumentModel struct {
 }
 
 // Insert creates a new instrument in the database.
-func (i InstrumentModel) Insert(instrument *Instrument) error {
+func (i *InstrumentModel) Insert(instrument *Instrument) error {
 
 	query := `
 		INSERT INTO instruments (name, manufacturer, manufacture_year, type, estimated_value, condition, description, famous_owners, owner_user_id)
@@ -86,7 +86,7 @@ func (i InstrumentModel) Insert(instrument *Instrument) error {
 
 // Get retrieves an instrument from the database based on the provided id value.
 // Returns ErrRecordNotFound if no data found during retrieve.
-func (i InstrumentModel) Get(id int64) (*Instrument, error) {
+func (i *InstrumentModel) Get(id int64) (*Instrument, error) {
 
 	if id < 1 {
 		return nil, ErrRecordNotFound
@@ -132,7 +132,7 @@ func (i InstrumentModel) Get(id int64) (*Instrument, error) {
 }
 
 // GetAll returns all instrumets stored in the database.
-func (i InstrumentModel) GetAll(name string, manufacturer string, iType string, famousOwners []string, ownerUserID int64, filters Filters) (instruments []*Instrument, metaData MetaData, err error) {
+func (i *InstrumentModel) GetAll(name string, manufacturer string, iType string, famousOwners []string, ownerUserID int64, filters Filters) (instruments []*Instrument, metaData MetaData, err error) {
 
 	//nolint:gosec
 	query := fmt.Sprintf(`
@@ -208,7 +208,7 @@ func (i InstrumentModel) GetAll(name string, manufacturer string, iType string, 
 // Update updates the matching instrument in the database with the provided field values.
 // Returns ErrRecordnotFound if no target data found during update.
 // Returns ErrEditConflict if there was a race condidion during update.
-func (i InstrumentModel) Update(instrument *Instrument) error {
+func (i *InstrumentModel) Update(instrument *Instrument) error {
 
 	query := `
 		UPDATE instruments
@@ -261,7 +261,7 @@ func (i InstrumentModel) Update(instrument *Instrument) error {
 // Delete deletes the corresponding instrument record with the provided id in the database.
 // Returns ErrRecordnotFound if no target data found to delete.
 // Returns ErrConflict if the deleted instrument is swapped.
-func (i InstrumentModel) Delete(id int64) error {
+func (i *InstrumentModel) Delete(id int64) error {
 
 	if id < 1 {
 		return ErrRecordNotFound

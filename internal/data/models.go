@@ -23,10 +23,21 @@ type InstrumentModeler interface {
 	Delete(id int64) error
 }
 
+// Usermodeler interface abstracts a model for users.
+type UserModeler interface {
+	Insert(user *User) error
+	GetAll() (users []*User, err error)
+	GetByEmail(email string) (*User, error)
+	GetByID(id int64) (*User, error)
+	Update(user *User) error
+	Delete(id int64) error
+	GetForStatefulToken(tokenScope, tokenPlaintext string) (*User, error)
+}
+
 // Models wraps all database models used in the application.
 type Models struct {
 	Instruments    InstrumentModeler
-	Users          UserModel
+	Users          UserModeler
 	Swaps          SwapModel
 	StatefulTokens StatefulTokenModel
 }
@@ -35,7 +46,7 @@ type Models struct {
 func NewModel(db *sql.DB) Models {
 	return Models{
 		Instruments:    &InstrumentModel{DB: db},
-		Users:          UserModel{DB: db},
+		Users:          &UserModel{DB: db},
 		Swaps:          SwapModel{DB: db},
 		StatefulTokens: StatefulTokenModel{DB: db},
 	}

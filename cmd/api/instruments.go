@@ -9,6 +9,7 @@ import (
 	"github.com/ttarnok/instrument-swap-api/internal/validator"
 )
 
+// listInstrumentsHandler is responsible for listing instruments.
 func (app *application) listInstrumentsHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Name         string
@@ -57,6 +58,7 @@ func (app *application) listInstrumentsHandler(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// showInstrumentHandler shows a specific instrument.
 func (app *application) showInstrumentHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := app.extractIDParam(r)
@@ -85,6 +87,7 @@ func (app *application) showInstrumentHandler(w http.ResponseWriter, r *http.Req
 
 }
 
+// createInstrumentHandler creates a new instrument.
 func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {
@@ -154,6 +157,7 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 
 }
 
+// updateInstrumentHandler updates an instrument.
 // JSON items with null values will be ignored and will remain unchanged.
 func (app *application) updateInstrumentHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -242,6 +246,7 @@ func (app *application) updateInstrumentHandler(w http.ResponseWriter, r *http.R
 
 }
 
+// deleteInstrumentHandler deletes an instrument.
 func (app *application) deleteInstrumentHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := app.extractIDParam(r)

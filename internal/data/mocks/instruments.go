@@ -3,6 +3,7 @@ package mocks
 
 import (
 	"slices"
+	"sync"
 
 	"github.com/ttarnok/instrument-swap-api/internal/data"
 )
@@ -10,6 +11,7 @@ import (
 // InstrumentModelMock is a mock implementation for an instrument model.
 type InstrumentModelMock struct {
 	db []*data.Instrument
+	sync.Mutex
 }
 
 // NewEmptyInstrumentModelMock returns a new InstrumentModelMock with empty internal store.
@@ -26,7 +28,8 @@ func NewNonEmptyInstrumentModelMock(input []*data.Instrument) *InstrumentModelMo
 
 // Insert inserts an instrument into the mocked database.
 func (im *InstrumentModelMock) Insert(instrument *data.Instrument) error {
-
+	im.Lock()
+	defer im.Unlock()
 	im.db = append(im.db, instrument)
 	return nil
 
@@ -50,6 +53,8 @@ func (im *InstrumentModelMock) GetAll(name string, manufacturer string, iType st
 
 // Update updates an instrument record in the mocked database.
 func (im *InstrumentModelMock) Update(instrument *data.Instrument) error {
+	im.Lock()
+	defer im.Unlock()
 	for index, i := range im.db {
 		if i.ID == instrument.ID {
 			im.db[index] = instrument
@@ -61,6 +66,9 @@ func (im *InstrumentModelMock) Update(instrument *data.Instrument) error {
 
 // Delete deletes an instrument from the mocked database.
 func (im *InstrumentModelMock) Delete(id int64) error {
+	im.Lock()
+	defer im.Unlock()
+
 	indexToDel := -1
 	for index, i := range im.db {
 		if i.ID == id {

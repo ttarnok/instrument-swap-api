@@ -33,8 +33,8 @@ func ValidateInstrument(v *validator.Validator, instrument *Instrument) {
 	v.Check(instrument.Name != "", "name", "must be provided")
 	v.Check(len(instrument.Name) <= 500, "name", "must not be more than 500 bytes long")
 
-	v.Check(instrument.Name != "", "manufacturer", "must be provided")
-	v.Check(len(instrument.Name) <= 500, "manufacturer", "must not be more than 500 bytes long")
+	v.Check(instrument.Manufacturer != "", "manufacturer", "must be provided")
+	v.Check(len(instrument.Manufacturer) <= 500, "manufacturer", "must not be more than 500 bytes long")
 
 	v.Check(instrument.ManufactureYear != 0, "manufacture_year", "must be provided")
 	v.Check(instrument.ManufactureYear >= 0, "manufacture_year", "must be greater than 0")

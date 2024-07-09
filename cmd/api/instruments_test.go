@@ -77,6 +77,8 @@ var testData = []*data.Instrument{
 	},
 }
 
+var testDataEmpty = []*data.Instrument{}
+
 // TestListInstrumentsHandler unit tests the functionality of listInstrumentsHandler.
 func TestListInstrumentsHandler(t *testing.T) {
 
@@ -205,6 +207,7 @@ func TestShowInstrumentHandler(t *testing.T) {
 			}
 
 			if tt.checkResult {
+
 				bs, err := io.ReadAll(res.Body)
 				if err != nil {
 					log.Fatal(err)
@@ -228,6 +231,191 @@ func TestShowInstrumentHandler(t *testing.T) {
 					t.Errorf(`expected message body "%#v", got "%#v"`, testData[tt.expectedIndex], instrument)
 				}
 			}
+		})
+	}
+
+}
+
+// TestCreateInstrumentHandler implememts unit tests for createInstrumentHandler.
+func TestCreateInstrumentHandler(t *testing.T) {
+
+	type inputInstrument struct {
+		Name            string   `json:"name"`
+		Manufacturer    string   `json:"manufacturer"`
+		ManufactureYear int32    `json:"manufacture_year"`
+		Type            string   `json:"type"`
+		EstimatedValue  int64    `json:"estimated_value"`
+		Condition       string   `json:"condition"`
+		Description     string   `json:"description"`
+		FamousOwners    []string `json:"famous_owners"`
+		OwnerUserID     int64    `json:"owner_user_id"`
+	}
+
+	type testCase struct {
+		name                   string
+		input                  inputInstrument
+		expectedStatusCode     int
+		expectedLocationHeader string
+		checkResult            bool
+		expectedResult         *data.Instrument
+		expectedErrResult      map[string]string
+	}
+
+	testCases := []testCase{
+		{
+			name: "happy path",
+			input: inputInstrument{
+				Name:            "M1",
+				Manufacturer:    "Korg",
+				ManufactureYear: 1990,
+				Type:            "synthesizer",
+				EstimatedValue:  100000,
+				Condition:       "used",
+				Description:     "A music workstation manufactured by Korg.",
+				FamousOwners:    []string{"The Orb"},
+				OwnerUserID:     1,
+			},
+			expectedStatusCode:     http.StatusCreated,
+			expectedLocationHeader: "/v1/instrumets/0",
+			checkResult:            true,
+			expectedResult: &data.Instrument{
+				ID:              0,
+				CreatedAt:       time.Time{},
+				Name:            "M1",
+				Manufacturer:    "Korg",
+				ManufactureYear: 1990,
+				Type:            "synthesizer",
+				EstimatedValue:  100000,
+				Condition:       "used",
+				Description:     "A music workstation manufactured by Korg.",
+				FamousOwners:    []string{"The Orb"},
+				OwnerUserID:     1,
+				Version:         0,
+			},
+			expectedErrResult: nil,
+		},
+		{
+			name: "empty instrument name",
+			input: inputInstrument{
+				Name:            "",
+				Manufacturer:    "Korg",
+				ManufactureYear: 1990,
+				Type:            "synthesizer",
+				EstimatedValue:  100000,
+				Condition:       "used",
+				Description:     "A music workstation manufactured by Korg.",
+				FamousOwners:    []string{"The Orb"},
+				OwnerUserID:     1,
+			},
+			expectedStatusCode:     http.StatusUnprocessableEntity,
+			expectedLocationHeader: "",
+			checkResult:            true,
+			expectedResult:         nil,
+			expectedErrResult:      map[string]string{"name": "must be provided"},
+		},
+		{
+			name: "non existent owner user id",
+			input: inputInstrument{
+				Name:            "M1",
+				Manufacturer:    "Korg",
+				ManufactureYear: 1990,
+				Type:            "synthesizer",
+				EstimatedValue:  100000,
+				Condition:       "used",
+				Description:     "A music workstation manufactured by Korg.",
+				FamousOwners:    []string{"The Orb"},
+				OwnerUserID:     100,
+			},
+			expectedStatusCode:     http.StatusUnprocessableEntity,
+			expectedLocationHeader: "",
+			checkResult:            true,
+			expectedResult:         nil,
+			expectedErrResult:      map[string]string{"owner_user_id": "user does not exist"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			app := &application{
+				models: data.Models{
+					Instruments: mocks.NewNonEmptyInstrumentModelMock(testDataEmpty),
+					Users:       mocks.NewUserModelEmptyMock(),
+				},
+			}
+
+			ts := httptest.NewServer(http.HandlerFunc(app.createInstrumentHandler))
+			defer ts.Close()
+
+			bsInput, err := json.Marshal(tc.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			request, err := http.NewRequest("POST", ts.URL, bytes.NewBuffer(bsInput))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := &http.Client{}
+			res, err := client.Do(request)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if res.StatusCode != tc.expectedStatusCode {
+				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, res.StatusCode)
+			}
+
+			if tc.expectedLocationHeader != res.Header.Get("Location") {
+				t.Errorf(`Expected Location header value "%s", got "%s"`, tc.expectedLocationHeader, res.Header.Get("Location"))
+			}
+
+			if tc.checkResult {
+				bs, err := io.ReadAll(res.Body)
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer func() {
+					err := res.Body.Close()
+					if err != nil {
+						t.Fatal(err)
+					}
+				}()
+
+				if tc.expectedResult != nil {
+
+					var env map[string]*data.Instrument
+
+					err = json.Unmarshal(bs, &env)
+					if err != nil {
+						t.Fatal(err)
+					}
+					instrument := env["instrument"]
+
+					if !reflect.DeepEqual(tc.expectedResult, instrument) {
+						t.Errorf("expected result:\n%#v, got:\n%#v", tc.expectedResult, instrument)
+					}
+
+				}
+
+				if tc.expectedErrResult != nil {
+
+					var env map[string]map[string]string
+
+					err = json.Unmarshal(bs, &env)
+					if err != nil {
+						t.Fatal(err)
+					}
+					errResult := env["error"]
+
+					if !reflect.DeepEqual(tc.expectedErrResult, errResult) {
+						t.Errorf("expected result:\n%#v, got:\n%#v", tc.expectedErrResult, errResult)
+					}
+				}
+
+			}
+
 		})
 	}
 

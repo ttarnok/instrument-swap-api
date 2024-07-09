@@ -115,6 +115,7 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 		Type:            input.Type,
 		EstimatedValue:  input.EstimatedValue,
 		Condition:       input.Condition,
+		Description:     input.Description,
 		FamousOwners:    input.FamousOwners,
 		OwnerUserID:     input.OwnerUserID,
 	}

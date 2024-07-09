@@ -23,7 +23,7 @@ type InstrumentModeler interface {
 	Delete(id int64) error
 }
 
-// Usermodeler interface abstracts a model for users.
+// UserModeler interface abstracts a model for users.
 type UserModeler interface {
 	Insert(user *User) error
 	GetAll() (users []*User, err error)

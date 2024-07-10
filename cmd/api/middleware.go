@@ -16,6 +16,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// recoverPanic middleware recovers from panics thats are potentially originated from other midlewares and handlers.
 func (app *application) recoverPanic(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 

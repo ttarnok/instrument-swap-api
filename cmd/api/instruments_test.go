@@ -611,3 +611,90 @@ func TestUpdateInstrumentHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteInstrumentHandler(t *testing.T) {
+
+	type testCase struct {
+		name               string
+		pathParam          string
+		expectedStatusCode int
+		expectedResult     map[string]string
+	}
+
+	testCases := []testCase{
+		{
+			name:               "happy path",
+			pathParam:          "1",
+			expectedStatusCode: http.StatusOK,
+			expectedResult:     map[string]string{"message": "instrument successfully deleted"},
+		},
+		{
+			name:               "non existent id",
+			pathParam:          "1000",
+			expectedStatusCode: http.StatusNotFound,
+			expectedResult:     map[string]string{"error": "the requested resource could not be found"},
+		},
+		{
+			name:               "delete swapped instrument",
+			pathParam:          "999",
+			expectedStatusCode: http.StatusBadRequest,
+			expectedResult:     map[string]string{"error": "can not perform the operation on a swapped instrument"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			app := &application{
+				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+				models: data.Models{Instruments: mocks.NewNonEmptyInstrumentModelMock(testData)},
+			}
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("POST /{id}", app.deleteInstrumentHandler)
+
+			ts := httptest.NewServer(mux)
+			defer ts.Close()
+
+			path := fmt.Sprintf("%s/%s", ts.URL, tc.pathParam)
+
+			request, err := http.NewRequest("POST", path, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := &http.Client{}
+			res, err := client.Do(request)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if tc.expectedStatusCode != res.StatusCode {
+				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, res.StatusCode)
+			}
+
+			bs, err := io.ReadAll(res.Body)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer func() {
+				err := res.Body.Close()
+				if err != nil {
+					t.Fatal(err)
+				}
+			}()
+
+			var env map[string]string
+
+			err = json.Unmarshal(bs, &env)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !reflect.DeepEqual(tc.expectedResult, env) {
+				t.Errorf("expected message body\n%#v, got\n%#v", tc.expectedResult, env)
+			}
+		})
+	}
+
+}

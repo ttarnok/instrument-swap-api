@@ -65,13 +65,20 @@ func (im *InstrumentModelMock) Update(instrument *data.Instrument) error {
 }
 
 // Delete deletes an instrument from the mocked database.
+// If the provided id is not found, returns data.ErrRecordNotFound.
+// If the provided id is 999, returns data.ErrConflict.
 func (im *InstrumentModelMock) Delete(id int64) error {
+
+	if id == 999 {
+		return data.ErrConflict
+	}
+
 	im.Lock()
 	defer im.Unlock()
 
 	indexToDel := -1
 	for index, i := range im.db {
-		if i.ID == id {
+		if i != nil && i.ID == id {
 			indexToDel = index
 			break
 		}

@@ -269,7 +269,6 @@ func (app *application) deleteInstrumentHandler(w http.ResponseWriter, r *http.R
 		}
 		return
 	}
-
 	err = app.writeJSON(w, http.StatusOK, envelope{"message": "instrument successfully deleted"}, nil)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)

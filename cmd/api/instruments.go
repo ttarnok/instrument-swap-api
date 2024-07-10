@@ -180,13 +180,13 @@ func (app *application) updateInstrumentHandler(w http.ResponseWriter, r *http.R
 	}
 
 	var input struct {
-		Name            *string  `json:"name"`
-		Manufacturer    *string  `json:"manufacturer"`
-		ManufactureYear *int32   `json:"manufacture_year"`
-		Type            *string  `json:"type"`
-		EstimatedValue  *int64   `json:"estimated_value"`
-		Condition       *string  `json:"condition"`
-		Description     *string  `json:"description"`
+		Name            string   `json:"name"`
+		Manufacturer    string   `json:"manufacturer"`
+		ManufactureYear int32    `json:"manufacture_year"`
+		Type            string   `json:"type"`
+		EstimatedValue  int64    `json:"estimated_value"`
+		Condition       string   `json:"condition"`
+		Description     string   `json:"description"`
 		FamousOwners    []string `json:"famous_owners"`
 	}
 
@@ -196,28 +196,29 @@ func (app *application) updateInstrumentHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if input.Name != nil {
-		instrument.Name = *input.Name
+	if input.Name != "" {
+		instrument.Name = input.Name
 	}
-	if input.Manufacturer != nil {
-		instrument.Manufacturer = *input.Manufacturer
+	if input.Manufacturer != "" {
+		instrument.Manufacturer = input.Manufacturer
 	}
-	if input.ManufactureYear != nil {
-		instrument.ManufactureYear = *input.ManufactureYear
+
+	if input.ManufactureYear != 0 {
+		instrument.ManufactureYear = input.ManufactureYear
 	}
-	if input.Type != nil {
-		instrument.Type = *input.Type
+	if input.Type != "" {
+		instrument.Type = input.Type
 	}
-	if input.EstimatedValue != nil {
-		instrument.EstimatedValue = *input.EstimatedValue
+	if input.EstimatedValue != 0 {
+		instrument.EstimatedValue = input.EstimatedValue
 	}
-	if input.Condition != nil {
-		instrument.Condition = *input.Condition
+	if input.Condition != "" {
+		instrument.Condition = input.Condition
 	}
-	if input.Description != nil {
-		instrument.Description = *input.Description
+	if input.Description != "" {
+		instrument.Description = input.Description
 	}
-	if input.FamousOwners != nil {
+	if len(input.FamousOwners) != 0 {
 		instrument.FamousOwners = input.FamousOwners
 	}
 

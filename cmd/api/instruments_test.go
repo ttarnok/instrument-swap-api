@@ -420,3 +420,194 @@ func TestCreateInstrumentHandler(t *testing.T) {
 	}
 
 }
+
+// TestUpdateInstrumentHandler implements unit tests for updateInstrumentHandler.
+func TestUpdateInstrumentHandler(t *testing.T) {
+
+	type inputInstrument struct {
+		Name            string   `json:"name"`
+		Manufacturer    string   `json:"manufacturer"`
+		ManufactureYear int32    `json:"manufacture_year"`
+		Type            string   `json:"type"`
+		EstimatedValue  int64    `json:"estimated_value"`
+		Condition       string   `json:"condition"`
+		Description     string   `json:"description"`
+		FamousOwners    []string `json:"famous_owners"`
+	}
+
+	type testCase struct {
+		name               string
+		input              inputInstrument
+		pathParam          string
+		expectedIndex      int
+		expectedStatusCode int
+		expectedResult     *data.Instrument
+		expectedErrResult  map[string]string
+	}
+
+	testCases := []testCase{
+		{
+			name: "happy path - partial update",
+			input: inputInstrument{
+				Name:         "TB303",
+				Manufacturer: "Roland",
+			},
+			pathParam:          "1",
+			expectedIndex:      0,
+			expectedStatusCode: http.StatusOK,
+			expectedResult: &data.Instrument{
+				ID:              1,
+				CreatedAt:       testData[0].CreatedAt,
+				Name:            "TB303",
+				Manufacturer:    "Roland",
+				ManufactureYear: 1990,
+				Type:            "synthesizer",
+				EstimatedValue:  100000,
+				Condition:       "used",
+				Description:     "A music workstation manufactured by Korg.",
+				FamousOwners:    []string{"The Orb"},
+				OwnerUserID:     1,
+				Version:         1,
+			},
+			expectedErrResult: nil,
+		},
+		{
+			name: "happy path - full update",
+			input: inputInstrument{
+				Name:            "E1",
+				Manufacturer:    "Moog",
+				ManufactureYear: 2000,
+				Type:            "guitar",
+				EstimatedValue:  2,
+				Condition:       "poor",
+				Description:     "This is a dummy test description",
+				FamousOwners:    []string{"Apple", "Banana", "Cherry"},
+			},
+			pathParam:          "1",
+			expectedIndex:      0,
+			expectedStatusCode: http.StatusOK,
+			expectedResult: &data.Instrument{
+				ID:              1,
+				CreatedAt:       testData[0].CreatedAt,
+				Name:            "E1",
+				Manufacturer:    "Moog",
+				ManufactureYear: 2000,
+				Type:            "guitar",
+				EstimatedValue:  2,
+				Condition:       "poor",
+				Description:     "This is a dummy test description",
+				FamousOwners:    []string{"Apple", "Banana", "Cherry"},
+				OwnerUserID:     1,
+				Version:         1,
+			},
+			expectedErrResult: nil,
+		},
+		{
+			name:               "not valid path param",
+			input:              inputInstrument{},
+			pathParam:          "no",
+			expectedIndex:      -1,
+			expectedStatusCode: http.StatusNotFound,
+			expectedResult:     nil,
+			expectedErrResult:  map[string]string{"error": "the requested resource could not be found"},
+		},
+		{
+			name:               "not existing path param",
+			input:              inputInstrument{},
+			pathParam:          "10000",
+			expectedIndex:      -1,
+			expectedStatusCode: http.StatusNotFound,
+			expectedResult:     nil,
+			expectedErrResult:  map[string]string{"error": "the requested resource could not be found"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			app := &application{
+				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+				models: data.Models{Instruments: mocks.NewNonEmptyInstrumentModelMock(testData)},
+			}
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("POST /{id}", app.updateInstrumentHandler)
+
+			ts := httptest.NewServer(mux)
+			defer ts.Close()
+
+			path := fmt.Sprintf("%s/%s", ts.URL, tc.pathParam)
+
+			bs, err := json.Marshal(tc.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			request, err := http.NewRequest("POST", path, bytes.NewBuffer(bs))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := &http.Client{}
+			res, err := client.Do(request)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if tc.expectedStatusCode != res.StatusCode {
+				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, res.StatusCode)
+			}
+
+			if tc.expectedResult != nil {
+
+				bs, err := io.ReadAll(res.Body)
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer func() {
+					err := res.Body.Close()
+					if err != nil {
+						t.Fatal(err)
+					}
+				}()
+
+				var env map[string]*data.Instrument
+
+				err = json.Unmarshal(bs, &env)
+				if err != nil {
+					t.Fatal(err)
+				}
+				instrument := env["instrument"]
+
+				if !reflect.DeepEqual(instrument, tc.expectedResult) {
+					t.Errorf("expected message body\n%#v, got\n%#v", tc.expectedResult, instrument)
+				}
+			}
+
+			if tc.expectedErrResult != nil {
+
+				bs, err := io.ReadAll(res.Body)
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer func() {
+					err := res.Body.Close()
+					if err != nil {
+						t.Fatal(err)
+					}
+				}()
+
+				var errEnv map[string]string
+
+				err = json.Unmarshal(bs, &errEnv)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if !reflect.DeepEqual(tc.expectedErrResult, errEnv) {
+					t.Errorf("expected message body\n%#v, got\n%#v", tc.expectedErrResult, errEnv)
+				}
+			}
+		})
+	}
+}

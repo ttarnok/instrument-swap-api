@@ -5,8 +5,15 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"strconv"
 	"testing"
 	"time"
+
+	"github.com/pascaldekloe/jwt"
+	"github.com/ttarnok/instrument-swap-api/internal/auth"
+	"github.com/ttarnok/instrument-swap-api/internal/data"
+	"github.com/ttarnok/instrument-swap-api/internal/data/mocks"
 )
 
 // TestRecoverPanic implement unit tests for recoverPanic middleware.
@@ -191,6 +198,130 @@ func TestRateLimit(t *testing.T) {
 		})
 	}
 
+}
+
+// TestAuthenticate implements unit testes for authenticate middleware.
+func TestAuthenticate(t *testing.T) {
+
+	testSecret := "secret"
+
+	var claims jwt.Claims
+	claims.Subject = strconv.FormatInt(1, 10)
+	claims.Issued = jwt.NewNumericTime(time.Now())
+	claims.NotBefore = jwt.NewNumericTime(time.Now())
+	claims.Expires = jwt.NewNumericTime(time.Now().Add(24 * time.Hour))
+	claims.Issuer = "instrument-swap.example.example"
+	claims.Audiences = []string{"instrument-swap.example.example"}
+
+	validJWTBytes, err := claims.HMACSign(jwt.HS256, []byte(testSecret))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	claims.Subject = strconv.FormatInt(1, 10)
+	claims.Issued = jwt.NewNumericTime(time.Now().Add(-48 * time.Hour))
+	claims.NotBefore = jwt.NewNumericTime(time.Now().Add(-48 * time.Hour))
+	claims.Expires = jwt.NewNumericTime(time.Now().Add(-48 * time.Hour).Add(24 * time.Hour))
+	claims.Issuer = "instrument-swap.example.example"
+	claims.Audiences = []string{"instrument-swap.example.example"}
+	expiredJWTBytes, err := claims.HMACSign(jwt.HS256, []byte(testSecret))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type testCase struct {
+		name               string
+		token              string
+		expectedStatusCode int
+		expectedUser       *data.User
+	}
+
+	testCases := []testCase{
+		{
+			name:               "happy path - without token",
+			token:              "",
+			expectedStatusCode: http.StatusOK,
+			expectedUser:       data.AnonymousUser,
+		},
+		{
+			name:               "broken token value",
+			token:              "asfsgqweg",
+			expectedStatusCode: http.StatusUnauthorized,
+			expectedUser:       data.AnonymousUser,
+		},
+		{
+			name:               "broken bearer token value",
+			token:              "Bearer asfsgqweg",
+			expectedStatusCode: http.StatusUnauthorized,
+			expectedUser:       data.AnonymousUser,
+		},
+		{
+			name:               "invalid token",
+			token:              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+			expectedStatusCode: http.StatusUnauthorized,
+			expectedUser:       data.AnonymousUser,
+		},
+		{
+			name:               "expired token",
+			token:              "Bearer " + string(expiredJWTBytes),
+			expectedStatusCode: http.StatusUnauthorized,
+			expectedUser:       data.AnonymousUser,
+		},
+		{
+			name:               "valid token",
+			token:              "Bearer " + string(validJWTBytes),
+			expectedStatusCode: http.StatusOK,
+			expectedUser:       data.AnonymousUser,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			app := &application{
+				models: data.Models{
+					Users: mocks.NewUserModelEmptyMock(),
+				},
+				auth:   auth.NewAuth(testSecret),
+				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+			}
+
+			req, err := http.NewRequest("GET", "/", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if tc.token != "" {
+				req.Header.Add("Authorization", tc.token)
+			}
+
+			next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+				if !reflect.DeepEqual(tc.expectedUser, app.contextGetUser(r)) {
+					t.Errorf(`expected user %#v, got %#v`, tc.expectedUser, app.contextGetUser(r))
+				}
+
+				_, err := w.Write([]byte("OK"))
+				if err != nil {
+					t.Fatal(err)
+				}
+			})
+
+			rr := httptest.NewRecorder()
+
+			app.authenticate(next).ServeHTTP(rr, req)
+			recRes := rr.Result()
+
+			if tc.expectedStatusCode != recRes.StatusCode {
+				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, recRes.StatusCode)
+			}
+
+			if recRes.Header.Get("Vary") != "Authorization" {
+				t.Errorf(`response shoud contain "Vary" header with the value of "Authorization", got value: "%s"`, recRes.Header.Get("Vary"))
+			}
+
+		})
+	}
 }
 
 // TestEnableCORS implements unit tests for enableCORS middleware.

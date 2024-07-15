@@ -14,6 +14,7 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/ttarnok/instrument-swap-api/internal/auth"
 	"github.com/ttarnok/instrument-swap-api/internal/data"
 	"github.com/ttarnok/instrument-swap-api/internal/vcs"
 )
@@ -45,6 +46,7 @@ type application struct {
 	config config
 	logger *slog.Logger
 	models data.Models
+	auth   *auth.Auth
 }
 
 func main() {
@@ -106,6 +108,7 @@ func main() {
 		config: cfg,
 		logger: logger,
 		models: data.NewModel(db),
+		auth:   auth.NewAuth(cfg.jwt.secret),
 	}
 
 	err = app.serve()

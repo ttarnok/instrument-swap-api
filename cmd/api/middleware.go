@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pascaldekloe/jwt"
 	"github.com/ttarnok/instrument-swap-api/internal/data"
 	"golang.org/x/time/rate"
 )
@@ -90,6 +89,8 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 	})
 }
 
+// authenticate is a middleware that makes sure the request has a valid access token.
+// In case of valid access token, sets user information into the request context.
 func (app *application) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Vary", "Authorization")
@@ -110,23 +111,8 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 
 		token := headerParts[1]
 
-		claims, err := jwt.HMACCheck([]byte(token), []byte(app.config.jwt.secret))
+		claims, err := app.auth.AccessToken.ParseClaims([]byte(token))
 		if err != nil {
-			app.invalidAuthenticationTokenResponse(w, r)
-			return
-		}
-
-		if !claims.Valid(time.Now()) {
-			app.invalidAuthenticationTokenResponse(w, r)
-			return
-		}
-
-		if claims.Issuer != "instrument-swap.example.example" {
-			app.invalidAuthenticationTokenResponse(w, r)
-			return
-		}
-
-		if !claims.AcceptAudience("instrument-swap.example.example") {
 			app.invalidAuthenticationTokenResponse(w, r)
 			return
 		}

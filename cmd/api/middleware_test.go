@@ -229,6 +229,18 @@ func TestAuthenticate(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	claims.Subject = "non number"
+	claims.Issued = jwt.NewNumericTime(time.Now())
+	claims.NotBefore = jwt.NewNumericTime(time.Now())
+	claims.Expires = jwt.NewNumericTime(time.Now().Add(24 * time.Hour))
+	claims.Issuer = "instrument-swap.example.example"
+	claims.Audiences = []string{"instrument-swap.example.example"}
+
+	nonNumbericSubJWTBytes, err := claims.HMACSign(jwt.HS256, []byte(testSecret))
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	type testCase struct {
 		name               string
 		token              string
@@ -238,7 +250,13 @@ func TestAuthenticate(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:               "happy path - without token",
+			name:               "valid token",
+			token:              "Bearer " + string(validJWTBytes),
+			expectedStatusCode: http.StatusOK,
+			expectedUser:       &data.User{ID: 1, Name: "Test User"},
+		},
+		{
+			name:               "without token",
 			token:              "",
 			expectedStatusCode: http.StatusOK,
 			expectedUser:       data.AnonymousUser,
@@ -268,22 +286,39 @@ func TestAuthenticate(t *testing.T) {
 			expectedUser:       data.AnonymousUser,
 		},
 		{
-			name:               "valid token",
-			token:              "Bearer " + string(validJWTBytes),
-			expectedStatusCode: http.StatusOK,
+			name:               "nun numeric subject",
+			token:              "Bearer " + string(nonNumbericSubJWTBytes),
+			expectedStatusCode: http.StatusInternalServerError,
 			expectedUser:       data.AnonymousUser,
+		},
+		{
+			name:               "non existent user",
+			token:              "Bearer " + string(validJWTBytes),
+			expectedStatusCode: http.StatusUnauthorized,
+			expectedUser:       &data.User{ID: 2},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 
-			app := &application{
-				models: data.Models{
-					Users: mocks.NewUserModelEmptyMock(),
-				},
-				auth:   auth.NewAuth(testSecret),
-				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+			var app *application
+			if tc.expectedUser == data.AnonymousUser {
+				app = &application{
+					models: data.Models{
+						Users: mocks.NewEmptyUserModelMock(),
+					},
+					auth:   auth.NewAuth(testSecret),
+					logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+				}
+			} else {
+				app = &application{
+					models: data.Models{
+						Users: mocks.NewUserModelMock(map[int64]*data.User{tc.expectedUser.ID: tc.expectedUser}),
+					},
+					auth:   auth.NewAuth(testSecret),
+					logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+				}
 			}
 
 			req, err := http.NewRequest("GET", "/", nil)

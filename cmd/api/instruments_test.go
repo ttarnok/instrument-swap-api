@@ -340,7 +340,7 @@ func TestCreateInstrumentHandler(t *testing.T) {
 			app := &application{
 				models: data.Models{
 					Instruments: mocks.NewNonEmptyInstrumentModelMock(testDataEmpty),
-					Users:       mocks.NewUserModelEmptyMock(),
+					Users:       mocks.NewEmptyUserModelMock(),
 				},
 			}
 

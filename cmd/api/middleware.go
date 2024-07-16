@@ -140,6 +140,8 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 
 	})
 }
+
+// requireAuthenticatedUser middleware is responsible requiring requests to come from authenticated users.
 func (app *application) requireAuthenticatedUser(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := app.contextGetUser(r)
@@ -153,14 +155,10 @@ func (app *application) requireAuthenticatedUser(next http.HandlerFunc) http.Han
 	})
 }
 
+// requireActivatedUser middleware is responsible requiring requests to come from activated and authenticated users.
 func (app *application) requireActivatedUser(next http.HandlerFunc) http.HandlerFunc {
 	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := app.contextGetUser(r)
-
-		if user.IsAnonymous() {
-			app.authenticationRequiredResponse(w, r)
-			return
-		}
 
 		if !user.Activated {
 			app.inactiveAccountResponse(w, r)

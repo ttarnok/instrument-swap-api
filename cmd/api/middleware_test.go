@@ -413,6 +413,65 @@ func TestRequireAuthenticatedUser(t *testing.T) {
 	}
 }
 
+// TestRequireActivatedUser implement unit tests for requireActivatedUser middleware.
+func TestRequireActivatedUser(t *testing.T) {
+	type testCase struct {
+		name               string
+		inputUser          *data.User
+		expectedStatusCode int
+	}
+
+	testCases := []testCase{
+		{
+			name:               "happy path",
+			inputUser:          &data.User{ID: 1, Activated: true},
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name:               "not activated user",
+			inputUser:          &data.User{ID: 1, Activated: false},
+			expectedStatusCode: http.StatusForbidden,
+		},
+		{
+			name:               "AnonymousUser input",
+			inputUser:          data.AnonymousUser,
+			expectedStatusCode: http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			app := &application{
+				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+			}
+
+			req, err := http.NewRequest("GET", "/", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			req = app.contextSetUser(req, tc.inputUser)
+
+			next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("OK"))
+				if err != nil {
+					t.Fatal(err)
+				}
+			})
+
+			rr := httptest.NewRecorder()
+
+			app.requireActivatedUser(next).ServeHTTP(rr, req)
+			recRes := rr.Result()
+
+			if tc.expectedStatusCode != recRes.StatusCode {
+				t.Errorf(`Expected status code %d, got %d`, tc.expectedStatusCode, recRes.StatusCode)
+			}
+		})
+	}
+}
+
 // TestEnableCORS implements unit tests for enableCORS middleware.
 func TestEnableCORS(t *testing.T) {
 

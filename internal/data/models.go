@@ -34,11 +34,19 @@ type UserModeler interface {
 	GetForStatefulToken(tokenScope, tokenPlaintext string) (*User, error)
 }
 
+type SwapModeler interface {
+	GetAllForUser(userID int64) ([]*Swap, error)
+	Get(id int64) (*Swap, error)
+	GetByInstrumentID(id int64) (*Swap, error)
+	Insert(swap *Swap) error
+	Update(swap *Swap) error
+}
+
 // Models wraps all database models used in the application.
 type Models struct {
 	Instruments    InstrumentModeler
 	Users          UserModeler
-	Swaps          SwapModel
+	Swaps          SwapModeler
 	StatefulTokens StatefulTokenModel
 }
 
@@ -47,7 +55,7 @@ func NewModel(db *sql.DB) Models {
 	return Models{
 		Instruments:    &InstrumentModel{DB: db},
 		Users:          &UserModel{DB: db},
-		Swaps:          SwapModel{DB: db},
+		Swaps:          &SwapModel{DB: db},
 		StatefulTokens: StatefulTokenModel{DB: db},
 	}
 }

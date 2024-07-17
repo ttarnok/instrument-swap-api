@@ -34,22 +34,32 @@ func ValidateSwap(v *validator.Validator, swap *Swap) {
 	v.Check(swap.RecipientInstrumentID >= 0, "recipient_instrument_id", "must be greater than 0")
 }
 
+// SwapModel represents the database layer and provides functionality to interact with the database.
 type SwapModel struct {
 	DB *sql.DB
 }
 
-func (s SwapModel) GetAll() (swaps []*Swap, err error) {
+// GetAllForUser retrieves all swaps related to the given user.
+// Returns an error if the retrieval is not possible.
+func (s *SwapModel) GetAllForUser(userID int64) (swaps []*Swap, err error) {
 
 	query := `
-		SELECT id, created_at, requester_instrument_id, recipient_instrument_id, is_accepted,
-			accepted_at, is_rejected, rejected_at, is_ended, ended_at, version
-		FROM swaps
-		ORDER BY id`
+	SELECT id, created_at, requester_instrument_id, recipient_instrument_id, is_accepted,
+		accepted_at, is_rejected, rejected_at, is_ended, ended_at, version
+	FROM (
+			SELECT s.*, irec.owner_user_id irec_owner_user_id, ireq.owner_user_id ireq_owner_user_id
+			FROM swaps s
+			JOIN instruments ireq ON s.requester_instrument_id = ireq.id
+			JOIN instruments irec ON s.recipient_instrument_id = irec.id
+			)
+	WHERE irec_owner_user_id = $1
+		 OR ireq_owner_user_id = $2
+	ORDER BY id`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := s.DB.QueryContext(ctx, query)
+	rows, err := s.DB.QueryContext(ctx, query, userID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +106,9 @@ func (s SwapModel) GetAll() (swaps []*Swap, err error) {
 	return swaps, nil
 }
 
-func (s SwapModel) Get(id int64) (*Swap, error) {
+// Get retrieves a swap based on the given swap id.
+// Returns an error if the retrieval is not possible.
+func (s *SwapModel) Get(id int64) (*Swap, error) {
 
 	if id < 1 {
 		return nil, ErrRecordNotFound
@@ -139,7 +151,9 @@ func (s SwapModel) Get(id int64) (*Swap, error) {
 	return &swap, nil
 }
 
-func (s SwapModel) GetByInstrumentID(id int64) (*Swap, error) {
+// GetByInstrumentID returns swaps based on an instrument id.
+// Returns an error if the retrieval is not possible.
+func (s *SwapModel) GetByInstrumentID(id int64) (*Swap, error) {
 	if id < 1 {
 		return nil, ErrRecordNotFound
 	}
@@ -149,7 +163,7 @@ func (s SwapModel) GetByInstrumentID(id int64) (*Swap, error) {
 			accepted_at, is_rejected, rejected_at, is_ended, ended_at, version
 		FROM swaps
 		WHERE (requester_instrument_id = $1 OR recipient_instrument_id = $2)
-		  AND is_ended = FALSE`
+		ORDER BY id`
 
 	var swap Swap
 
@@ -181,7 +195,7 @@ func (s SwapModel) GetByInstrumentID(id int64) (*Swap, error) {
 	return &swap, nil
 }
 
-func (s SwapModel) Insert(swap *Swap) error {
+func (s *SwapModel) Insert(swap *Swap) error {
 
 	query := `
 		INSERT INTO swaps (requester_instrument_id, recipient_instrument_id)
@@ -196,7 +210,7 @@ func (s SwapModel) Insert(swap *Swap) error {
 		Scan(&swap.ID, &swap.CreatedAt, &swap.Version)
 }
 
-func (s SwapModel) Update(swap *Swap) error {
+func (s *SwapModel) Update(swap *Swap) error {
 
 	query := `
 		UPDATE swaps

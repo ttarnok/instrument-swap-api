@@ -10,9 +10,12 @@ import (
 	"github.com/ttarnok/instrument-swap-api/internal/validator"
 )
 
+// listSwapsHandler handles listing all swaps for the user within the context.
 func (app *application) listSwapsHandler(w http.ResponseWriter, r *http.Request) {
 
-	swaps, err := app.models.Swaps.GetAll()
+	user := app.contextGetUser(r)
+
+	swaps, err := app.models.Swaps.GetAllForUser(user.ID)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
 		return

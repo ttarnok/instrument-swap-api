@@ -107,7 +107,7 @@ func (s *SwapModel) GetAllForUser(userID int64) (swaps []*Swap, err error) {
 }
 
 // Get retrieves a swap based on the given swap id.
-// Returns an error if the retrieval is not possible.
+// Returns ErrRecordNotFound an error if the retrieval is not possible.
 func (s *SwapModel) Get(id int64) (*Swap, error) {
 
 	if id < 1 {

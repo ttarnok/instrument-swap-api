@@ -26,8 +26,14 @@ func (s *SwapModelMock) GetAllForUser(userID int64) ([]*data.Swap, error) {
 }
 
 // Get is a mocked mothof for SwapModelMock.
+// Returns the stored swap with the given id, returns an error otherwise.
 func (s *SwapModelMock) Get(id int64) (*data.Swap, error) {
-	return &data.Swap{}, nil
+	for _, swap := range s.db {
+		if swap.ID == id {
+			return swap, nil
+		}
+	}
+	return nil, data.ErrRecordNotFound
 }
 
 // GetByInstrumentID is a mocked mothof for SwapModelMock.

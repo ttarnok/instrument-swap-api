@@ -260,3 +260,183 @@ func TestShowSwapHandler(t *testing.T) {
 		})
 	}
 }
+
+// TestCreateSwapHandler impolements unit tests for createSwapHandler.
+func TestCreateSwapHandler(t *testing.T) {
+
+	type inputSwap struct {
+		RequesterInstrumentID int64 `json:"requester_instrument_id"`
+		RecipientInstrumentID int64 `json:"recipient_instrument_id"`
+	}
+
+	type testCase struct {
+		name               string
+		input              inputSwap
+		instruments        []*data.Instrument
+		expectedStatusCode int
+		shouldCheckBody    bool
+	}
+
+	testInstruments := []*data.Instrument{
+		{
+			ID:              1,
+			CreatedAt:       time.Now().UTC(),
+			Name:            "TB303",
+			Manufacturer:    "Roland",
+			ManufactureYear: 1990,
+			Type:            "synthesizer",
+			EstimatedValue:  100000,
+			Condition:       "used",
+			Description:     "A bass synth manufactured by Roland.",
+			FamousOwners:    []string{"Carbon Based Lifeforms"},
+			OwnerUserID:     1,
+			Version:         1,
+		},
+		{
+			ID:              2,
+			CreatedAt:       time.Now().UTC(),
+			Name:            "TR909",
+			Manufacturer:    "Roland",
+			ManufactureYear: 1990,
+			Type:            "synthesizer",
+			EstimatedValue:  100000,
+			Condition:       "used",
+			Description:     "A drum machine manufactured by Roland.",
+			FamousOwners:    []string{"The Orb"},
+			OwnerUserID:     1,
+			Version:         1,
+		},
+	}
+
+	testCases := []testCase{
+		{
+			name: "happy path",
+			input: inputSwap{
+				RequesterInstrumentID: 1,
+				RecipientInstrumentID: 2,
+			},
+			instruments:        testInstruments,
+			expectedStatusCode: http.StatusCreated,
+			shouldCheckBody:    true,
+		},
+		{
+			name: "non existent RequesterInstrumentID",
+			input: inputSwap{
+				RequesterInstrumentID: 10,
+				RecipientInstrumentID: 2,
+			},
+			instruments:        testInstruments,
+			expectedStatusCode: http.StatusBadRequest,
+			shouldCheckBody:    false,
+		},
+		{
+			name: "non existent RecipientInstrumentID",
+			input: inputSwap{
+				RequesterInstrumentID: 1,
+				RecipientInstrumentID: 20,
+			},
+			instruments:        testInstruments,
+			expectedStatusCode: http.StatusBadRequest,
+			shouldCheckBody:    false,
+		},
+		{
+			name: "invalid RecipientInstrumentID",
+			input: inputSwap{
+				RequesterInstrumentID: 1,
+				RecipientInstrumentID: -2,
+			},
+			instruments:        testInstruments,
+			expectedStatusCode: http.StatusUnprocessableEntity,
+			shouldCheckBody:    false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			app := &application{
+				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+				models: data.Models{
+					Swaps:       mocks.NewSwapModelMock(nil),
+					Instruments: mocks.NewNonEmptyInstrumentModelMock(tc.instruments),
+				},
+			}
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("POST /", app.createSwapHandler)
+
+			ts := httptest.NewServer(mux)
+			defer ts.Close()
+
+			path := fmt.Sprintf("%s/", ts.URL)
+
+			bs, err := json.Marshal(tc.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			req, err := http.NewRequest("POST", path, bytes.NewBuffer(bs))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if tc.expectedStatusCode != resp.StatusCode {
+				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, resp.StatusCode)
+			}
+
+			if tc.shouldCheckBody {
+				defer func() {
+					err := resp.Body.Close()
+					if err != nil {
+						t.Fatal(err)
+					}
+				}()
+
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				respEnvelope := make(envelope)
+
+				err = json.Unmarshal(body, &respEnvelope)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				respAnySlice, ok := respEnvelope["swap"]
+				if !ok {
+					t.Fatal(`the response does not contain enveloped swaps`)
+				}
+				buf := new(bytes.Buffer)
+				err = json.NewEncoder(buf).Encode(respAnySlice)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				var swap *data.Swap
+
+				err = json.NewDecoder(buf).Decode(&swap)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if tc.input.RecipientInstrumentID != swap.RecipientInstrumentID {
+					t.Errorf(`Expected RecipientInstrumentID %d, got %d`, tc.input.RecipientInstrumentID, swap.RecipientInstrumentID)
+				}
+
+				if tc.input.RequesterInstrumentID != swap.RequesterInstrumentID {
+					t.Errorf(`Expected RequesterInstrumentID %d, got %d`, tc.input.RequesterInstrumentID, swap.RequesterInstrumentID)
+				}
+
+			}
+		})
+	}
+
+}

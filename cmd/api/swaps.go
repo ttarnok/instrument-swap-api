@@ -84,7 +84,6 @@ func (app *application) createSwapHandler(w http.ResponseWriter, r *http.Request
 	// Check the instrument id-s are real.
 	_, err = app.models.Instruments.Get(input.RecipientInstrumentID)
 	if err != nil {
-		fmt.Println(err)
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
 			app.badRequestResponse(w, r, errors.New("recipient instrument not found"))
@@ -95,7 +94,6 @@ func (app *application) createSwapHandler(w http.ResponseWriter, r *http.Request
 	}
 	_, err = app.models.Instruments.Get(input.RequesterInstrumentID)
 	if err != nil {
-		fmt.Println(err)
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
 			app.badRequestResponse(w, r, errors.New("requester instrument not found"))

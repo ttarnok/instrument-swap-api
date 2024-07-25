@@ -13,19 +13,22 @@ type SwapModelMock struct {
 
 // NewSwapModelMock returns a new SwapModelMock based on the given db slice.
 func NewSwapModelMock(db []*data.Swap) *SwapModelMock {
+	if db == nil {
+		return &SwapModelMock{db: []*data.Swap{}}
+	}
 	return &SwapModelMock{db: db}
 }
 
 // GetAllForUser is a mocked method for SwapModelMock.
 // Returns all swaps stored in the struct.
 func (s *SwapModelMock) GetAllForUser(userID int64) ([]*data.Swap, error) {
-	if s.db == nil {
+	if len(s.db) == 0 {
 		return nil, errors.New("error")
 	}
 	return s.db, nil
 }
 
-// Get is a mocked mothof for SwapModelMock.
+// Get is a mocked method for SwapModelMock.
 // Returns the stored swap with the given id, returns an error otherwise.
 func (s *SwapModelMock) Get(id int64) (*data.Swap, error) {
 	for _, swap := range s.db {
@@ -36,17 +39,22 @@ func (s *SwapModelMock) Get(id int64) (*data.Swap, error) {
 	return nil, data.ErrRecordNotFound
 }
 
-// GetByInstrumentID is a mocked mothof for SwapModelMock.
+// GetByInstrumentID is a mocked method for SwapModelMock.
 func (s *SwapModelMock) GetByInstrumentID(id int64) (*data.Swap, error) {
-	return &data.Swap{}, nil
+	for _, swap := range s.db {
+		if swap.ID == id {
+			return swap, nil
+		}
+	}
+	return nil, data.ErrRecordNotFound
 }
 
-// Insert is a mocked mothof for SwapModelMock.
+// Insert is a mocked method for SwapModelMock.
 func (s *SwapModelMock) Insert(swap *data.Swap) error {
 	return nil
 }
 
-// Update is a mocked mothof for SwapModelMock.
+// Update is a mocked method for SwapModelMock.
 func (s *SwapModelMock) Update(swap *data.Swap) error {
 	return nil
 }

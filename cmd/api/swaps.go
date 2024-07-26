@@ -239,6 +239,7 @@ func (app *application) rejectSwapHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// endSwapHandler handles the end of a swap withthe given id.
 func (app *application) endSwapHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.extractIDParam(r)
 	if err != nil {

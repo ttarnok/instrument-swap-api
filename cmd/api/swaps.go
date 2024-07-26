@@ -28,6 +28,7 @@ func (app *application) listSwapsHandler(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+// showSwapHandler handles the retrieval of a swap with the given id.
 func (app *application) showSwapHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := app.extractIDParam(r)
@@ -56,6 +57,7 @@ func (app *application) showSwapHandler(w http.ResponseWriter, r *http.Request) 
 
 }
 
+// createSwapHandler handles the creation of a new swap with the given instruments.
 func (app *application) createSwapHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {
@@ -141,6 +143,7 @@ func (app *application) createSwapHandler(w http.ResponseWriter, r *http.Request
 
 }
 
+// acceptSwapHandler handles the acception of the given swap.
 func (app *application) acceptSwapHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.extractIDParam(r)
 	if err != nil {
@@ -187,6 +190,7 @@ func (app *application) acceptSwapHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// rejectSwapHandler handles the rejection of the given swap.
 func (app *application) rejectSwapHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.extractIDParam(r)
 	if err != nil {

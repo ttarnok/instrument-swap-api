@@ -440,3 +440,163 @@ func TestCreateSwapHandler(t *testing.T) {
 	}
 
 }
+
+// TestAcceptSwapHandler implements unit tests for acceptSwapHandler.
+func TestAcceptSwapHandler(t *testing.T) {
+
+	type testCase struct {
+		name               string
+		pathParam          string
+		swap               []*data.Swap
+		expectedStatusCode int
+		shouldCheckBody    bool
+	}
+
+	testCases := []testCase{
+		{
+			name:      "happy path",
+			pathParam: "1",
+			swap: []*data.Swap{{
+				ID:                    1,
+				CreatedAt:             time.Now().UTC(),
+				RequesterInstrumentID: 1,
+				RecipientInstrumentID: 2,
+				Version:               1,
+			}},
+			expectedStatusCode: http.StatusOK,
+			shouldCheckBody:    true,
+		},
+		{
+			name:      "non exisitent swap id",
+			pathParam: "1",
+			swap: []*data.Swap{{
+				ID:                    2,
+				CreatedAt:             time.Now().UTC(),
+				RequesterInstrumentID: 1,
+				RecipientInstrumentID: 2,
+				Version:               1,
+			}},
+			expectedStatusCode: http.StatusNotFound,
+			shouldCheckBody:    false,
+		},
+		{
+			name:      "swap with accepted state",
+			pathParam: "1",
+			swap: []*data.Swap{{
+				ID:                    1,
+				CreatedAt:             time.Now().UTC(),
+				RequesterInstrumentID: 1,
+				IsAccepted:            true,
+				RecipientInstrumentID: 2,
+				Version:               1,
+			}},
+			expectedStatusCode: http.StatusBadRequest,
+			shouldCheckBody:    false,
+		},
+		{
+			name:      "swap with rejected state",
+			pathParam: "1",
+			swap: []*data.Swap{{
+				ID:                    1,
+				CreatedAt:             time.Now().UTC(),
+				RequesterInstrumentID: 1,
+				IsRejected:            true,
+				RecipientInstrumentID: 2,
+				Version:               1,
+			}},
+			expectedStatusCode: http.StatusBadRequest,
+			shouldCheckBody:    false,
+		},
+		{
+			name:      "swap with ended state",
+			pathParam: "1",
+			swap: []*data.Swap{{
+				ID:                    1,
+				CreatedAt:             time.Now().UTC(),
+				RequesterInstrumentID: 1,
+				IsEnded:               true,
+				RecipientInstrumentID: 2,
+				Version:               1,
+			}},
+			expectedStatusCode: http.StatusBadRequest,
+			shouldCheckBody:    false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			app := &application{
+				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+				models: data.Models{Swaps: mocks.NewSwapModelMock(tc.swap)},
+			}
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("POST /{id}", app.acceptSwapHandler)
+
+			ts := httptest.NewServer(mux)
+			defer ts.Close()
+
+			path := fmt.Sprintf("%s/%s", ts.URL, tc.pathParam)
+
+			req, err := http.NewRequest("POST", path, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if tc.expectedStatusCode != resp.StatusCode {
+				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, resp.StatusCode)
+			}
+
+			if tc.shouldCheckBody {
+
+				defer func() {
+					err := resp.Body.Close()
+					if err != nil {
+						t.Fatal(err)
+					}
+				}()
+
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				respEnvelope := make(envelope)
+
+				err = json.Unmarshal(body, &respEnvelope)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				respAnySlice, ok := respEnvelope["swap"]
+				if !ok {
+					t.Fatal(`the response does not contain enveloped swaps`)
+				}
+				buf := new(bytes.Buffer)
+				err = json.NewEncoder(buf).Encode(respAnySlice)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				var swap *data.Swap
+
+				err = json.NewDecoder(buf).Decode(&swap)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if !swap.IsAccepted {
+					t.Error("output swap should be accepted")
+				}
+			}
+
+		})
+	}
+
+}

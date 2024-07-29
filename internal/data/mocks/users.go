@@ -6,7 +6,7 @@ import (
 
 // UserModelMock is a mock implementation for an UserModeler interface.
 type UserModelMock struct {
-	users map[int64]*data.User
+	users []*data.User
 }
 
 // NewEmptyUserModelMock creates a new empty UserModelMock.
@@ -15,30 +15,36 @@ func NewEmptyUserModelMock() *UserModelMock {
 }
 
 // NewUserModelMock returns a new UserModelMock based on the input users.
-func NewUserModelMock(users map[int64]*data.User) *UserModelMock {
+func NewUserModelMock(users []*data.User) *UserModelMock {
 	return &UserModelMock{users: users}
 }
 
 // Insert mocks the instertion of a new user into the model.
 // Does not provide any real functionality.
 func (u *UserModelMock) Insert(user *data.User) error {
+	u.users = append(u.users, user)
 	return nil
 }
 
 // GetAll mocks the retrieval all of the users from the model.
-// Does not provide any real functionality.
 func (u *UserModelMock) GetAll() (users []*data.User, err error) {
-	return []*data.User{}, nil
+	return u.users, nil
 }
 
 // GetByEmail mocks the retrieval of a user from the model based on user email.
-// Does not provide any real functionality.
+// Returns data.ErrRecordNotFound error if a user with the given email is not stored.
 func (u *UserModelMock) GetByEmail(email string) (*data.User, error) {
-	return &data.User{}, nil
+	for _, u := range u.users {
+		if u.Email == email {
+			return u, nil
+		}
+	}
+
+	return &data.User{}, data.ErrRecordNotFound
 }
 
 // GetByID mocks the retrieval of a user from the model based on user ID.
-// Returns data.ErrRecordNotFound error if the ID is not stored.
+// Returns data.ErrRecordNotFound error if a user with the given ID is not stored.
 // If the data store is empty and the provided user id is greater than 99, returns data.ErrRecordNotFound.
 func (u *UserModelMock) GetByID(id int64) (*data.User, error) {
 	if u.users == nil {
@@ -48,11 +54,13 @@ func (u *UserModelMock) GetByID(id int64) (*data.User, error) {
 		return &data.User{ID: id}, nil
 	}
 
-	user, ok := u.users[id]
-	if !ok {
-		return nil, data.ErrRecordNotFound
+	for _, u := range u.users {
+		if u.ID == id {
+			return u, nil
+		}
 	}
-	return user, nil
+
+	return nil, data.ErrRecordNotFound
 }
 
 // Update mocks the update of a user from the model.

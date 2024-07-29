@@ -34,6 +34,7 @@ func TestLivelinessHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
+
 	body, err := io.ReadAll(rs.Body)
 	if err != nil {
 		t.Fatal(err)

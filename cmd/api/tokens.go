@@ -8,6 +8,7 @@ import (
 	"github.com/ttarnok/instrument-swap-api/internal/validator"
 )
 
+// createAuthenticationTokenHandler implements a handler that respond with auth tokens.
 func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {
@@ -20,12 +21,10 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 		app.badRequestResponse(w, r, err)
 		return
 	}
-
 	v := validator.New()
 
 	data.ValidateEmail(v, input.Email)
 	data.ValidatePasswordPlaintext(v, input.Password)
-
 	if !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return

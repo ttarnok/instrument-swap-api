@@ -314,7 +314,7 @@ func TestAuthenticate(t *testing.T) {
 			} else {
 				app = &application{
 					models: data.Models{
-						Users: mocks.NewUserModelMock(map[int64]*data.User{tc.expectedUser.ID: tc.expectedUser}),
+						Users: mocks.NewUserModelMock([]*data.User{tc.expectedUser}),
 					},
 					auth:   auth.NewAuth(testSecret),
 					logger: slog.New(slog.NewTextHandler(io.Discard, nil)),

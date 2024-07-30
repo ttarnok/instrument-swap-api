@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/ttarnok/instrument-swap-api/internal/data"
@@ -130,4 +131,100 @@ func TestListUsersHandler(t *testing.T) {
 		})
 	}
 
+}
+
+// TestDeleteUserHandler implements unit tests for deleteUserHandler.
+func TestDeleteUserHandler(t *testing.T) {
+
+	testUsers := []*data.User{
+		{
+			ID:    1,
+			Name:  "Dummy Username",
+			Email: "test@example.com",
+		},
+		{
+			ID:    2,
+			Name:  "Other Temp User",
+			Email: "temp@example.com",
+		},
+	}
+
+	type testCase struct {
+		name               string
+		users              []*data.User
+		pathParam          int
+		expectedStatusCode int
+	}
+
+	testCases := []testCase{
+		{
+			name:               "happy path",
+			users:              testUsers,
+			pathParam:          1,
+			expectedStatusCode: http.StatusNoContent,
+		},
+		{
+			name:               "non existent user path",
+			users:              testUsers,
+			pathParam:          22,
+			expectedStatusCode: http.StatusNotFound,
+		},
+		{
+			name:               "no users",
+			users:              []*data.User{},
+			pathParam:          22,
+			expectedStatusCode: http.StatusNotFound,
+		},
+		{
+			name:               "invalid param",
+			users:              testUsers,
+			pathParam:          0,
+			expectedStatusCode: http.StatusNotFound,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			app := &application{
+				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+				models: data.Models{Users: mocks.NewUserModelMock(tc.users)},
+			}
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("POST /{id}", app.deleteUserHandler)
+
+			ts := httptest.NewServer(mux)
+			defer ts.Close()
+
+			path := fmt.Sprintf("%s/%s", ts.URL, strconv.Itoa(tc.pathParam))
+
+			req, err := http.NewRequest("POST", path, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if tc.expectedStatusCode != resp.StatusCode {
+				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, resp.StatusCode)
+			}
+
+			allUsers, err := app.models.Users.GetAll()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for _, user := range allUsers {
+				if user.ID == int64(tc.pathParam) {
+					t.Errorf(`the user with id(T%d) should be deleted from the model`, tc.pathParam)
+				}
+			}
+
+		})
+	}
 }

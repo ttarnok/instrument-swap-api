@@ -1,6 +1,8 @@
 package mocks
 
 import (
+	"slices"
+
 	"github.com/ttarnok/instrument-swap-api/internal/data"
 )
 
@@ -16,7 +18,9 @@ func NewEmptyUserModelMock() *UserModelMock {
 
 // NewUserModelMock returns a new UserModelMock based on the input users.
 func NewUserModelMock(users []*data.User) *UserModelMock {
-	return &UserModelMock{users: users}
+	uc := make([]*data.User, len(users))
+	copy(uc, users)
+	return &UserModelMock{users: uc}
 }
 
 // Insert mocks the instertion of a new user into the model.
@@ -70,9 +74,15 @@ func (u *UserModelMock) Update(user *data.User) error {
 }
 
 // Delete mocks the deletion of a user from the model.
-// Does not provide any real functionality.
+// If the given id is not found, returns data.ErrRecordNotFound.
 func (u *UserModelMock) Delete(id int64) error {
-	return nil
+	for i, user := range u.users {
+		if user.ID == id {
+			u.users = slices.Delete(u.users, i, i+1)
+			return nil
+		}
+	}
+	return data.ErrRecordNotFound
 }
 
 // GetForStatefulToken mocks the retieval of a user from the model based on its token.

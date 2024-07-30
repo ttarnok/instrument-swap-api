@@ -88,6 +88,7 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// deleteUserHandler implements deletion of a user with the given id.
 func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := app.extractIDParam(r)

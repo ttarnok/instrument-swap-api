@@ -20,8 +20,11 @@ type envelope map[string]any
 func (app *application) extractIDParam(r *http.Request) (int64, error) {
 	// Read and Validate params
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil || id < 1 {
+	if err != nil {
 		return 0, err
+	}
+	if id < 1 {
+		return 0, errors.New("invalid id value")
 	}
 	return id, nil
 }

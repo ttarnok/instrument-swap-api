@@ -8,6 +8,7 @@ import (
 	"github.com/ttarnok/instrument-swap-api/internal/validator"
 )
 
+// listUsersHandler handles listing of all users.
 func (app *application) listUsersHandler(w http.ResponseWriter, r *http.Request) {
 
 	users, err := app.models.Users.GetAll()

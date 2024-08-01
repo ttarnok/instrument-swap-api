@@ -24,6 +24,7 @@ func (app *application) listUsersHandler(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+// updateUserHandler handles the updation of the user with the given id.
 func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := app.extractIDParam(r)

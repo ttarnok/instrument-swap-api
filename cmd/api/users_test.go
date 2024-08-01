@@ -133,6 +133,205 @@ func TestListUsersHandler(t *testing.T) {
 
 }
 
+// compareUsers compares two users, if the fields are identical returns true.
+// compareUsers does not consider the Password field.
+func compareUsers(u1 *data.User, u2 *data.User) bool {
+
+	if u1.ID != u2.ID {
+		return false
+	}
+
+	if u1.Name != u2.Name {
+		return false
+	}
+
+	if u1.Email != u2.Email {
+		return false
+	}
+
+	if u1.Version != u2.Version {
+		return false
+	}
+
+	if u1.CreatedAt != u2.CreatedAt {
+		return false
+	}
+
+	if u1.Activated != u2.Activated {
+		return false
+	}
+
+	return true
+}
+
+// TestUpdateUserHandler implement unti tests for updateUserHandler.
+func TestUpdateUserHandler(t *testing.T) {
+
+	testUser := &data.User{
+		ID:    1,
+		Name:  "Dummy Username",
+		Email: "test@example.com",
+	}
+
+	err := testUser.Password.Set("asd123asd123")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type inputBody struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+
+	type testCase struct {
+		name               string
+		users              []*data.User
+		pathParam          int
+		input              inputBody
+		expectedStatusCode int
+		expectedUser       *data.User
+	}
+
+	testCases := []testCase{
+		{
+			name:               "happy path",
+			users:              []*data.User{testUser},
+			pathParam:          1,
+			input:              inputBody{Name: testUser.Name, Email: testUser.Email},
+			expectedStatusCode: http.StatusOK,
+			expectedUser:       testUser,
+		},
+		{
+			name:               "invalid path param",
+			users:              []*data.User{testUser},
+			pathParam:          0,
+			input:              inputBody{Name: testUser.Name, Email: testUser.Email},
+			expectedStatusCode: http.StatusNotFound,
+			expectedUser:       nil,
+		},
+		{
+			name:               "non existent user",
+			users:              []*data.User{testUser},
+			pathParam:          11,
+			input:              inputBody{Name: testUser.Name, Email: testUser.Email},
+			expectedStatusCode: http.StatusNotFound,
+			expectedUser:       nil,
+		},
+		{
+			name:               "non valid name",
+			users:              []*data.User{testUser},
+			pathParam:          1,
+			input:              inputBody{Name: "", Email: testUser.Email},
+			expectedStatusCode: http.StatusUnprocessableEntity,
+			expectedUser:       nil,
+		},
+		{
+			name:               "non valid email",
+			users:              []*data.User{testUser},
+			pathParam:          1,
+			input:              inputBody{Name: testUser.Name, Email: ""},
+			expectedStatusCode: http.StatusUnprocessableEntity,
+			expectedUser:       nil,
+		},
+		{
+			name:               "perform update",
+			users:              []*data.User{testUser},
+			pathParam:          1,
+			input:              inputBody{Name: "NewName", Email: "NewEmail@example.com"},
+			expectedStatusCode: http.StatusOK,
+			expectedUser: &data.User{
+					ID:    1,
+					Name:  "NewName",
+					Email: "NewEmail@example.com",
+				},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			app := &application{
+				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+				models: data.Models{Users: mocks.NewUserModelMock(tc.users)},
+			}
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("POST /{id}", app.updateUserHandler)
+
+			ts := httptest.NewServer(mux)
+			defer ts.Close()
+
+			path := fmt.Sprintf("%s/%s", ts.URL, strconv.Itoa(tc.pathParam))
+
+			bs, err := json.Marshal(tc.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			req, err := http.NewRequest("POST", path, bytes.NewBuffer(bs))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if tc.expectedStatusCode != resp.StatusCode {
+				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, resp.StatusCode)
+			}
+
+			if tc.expectedUser != nil {
+
+				defer func() {
+					err := resp.Body.Close()
+					if err != nil {
+						t.Fatal(err)
+					}
+				}()
+
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				respEnvelope := make(envelope)
+
+				err = json.Unmarshal(body, &respEnvelope)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				respAnySlice, ok := respEnvelope["user"]
+				if !ok {
+					t.Fatal(`the response does not contain an enveloped user`)
+				}
+				buf := new(bytes.Buffer)
+				err = json.NewEncoder(buf).Encode(respAnySlice)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				var user *data.User
+
+				err = json.NewDecoder(buf).Decode(&user)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if !compareUsers(tc.expectedUser, user) {
+					t.Errorf("expected user \n%#v, got \n%#v", tc.expectedUser, user)
+				}
+
+			}
+
+		})
+	}
+
+}
+
 // TestDeleteUserHandler implements unit tests for deleteUserHandler.
 func TestDeleteUserHandler(t *testing.T) {
 

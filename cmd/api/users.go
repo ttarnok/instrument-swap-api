@@ -172,6 +172,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 
 }
 
+// updatePasswordHandler handles the updation of a given users password.
 func (app *application) updatePasswordHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.extractIDParam(r)
 	if err != nil {

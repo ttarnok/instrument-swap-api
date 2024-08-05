@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"slices"
+	"sync"
 
 	"github.com/ttarnok/instrument-swap-api/internal/data"
 )
@@ -9,6 +10,7 @@ import (
 // UserModelMock is a mock implementation for an UserModeler interface.
 type UserModelMock struct {
 	users []*data.User
+	sync.Mutex
 }
 
 // NewEmptyUserModelMock creates a new empty UserModelMock.
@@ -26,6 +28,9 @@ func NewUserModelMock(users []*data.User) *UserModelMock {
 // Insert mocks the instertion of a new user into the model.
 // Does not provide any real functionality.
 func (u *UserModelMock) Insert(user *data.User) error {
+	u.Lock()
+	defer u.Unlock()
+
 	for _, u := range u.users {
 		if u.Email == user.Email {
 			return data.ErrDuplicateEmail
@@ -37,12 +42,18 @@ func (u *UserModelMock) Insert(user *data.User) error {
 
 // GetAll mocks the retrieval all of the users from the model.
 func (u *UserModelMock) GetAll() (users []*data.User, err error) {
+	u.Lock()
+	defer u.Unlock()
+
 	return u.users, nil
 }
 
 // GetByEmail mocks the retrieval of a user from the model based on user email.
 // Returns data.ErrRecordNotFound error if a user with the given email is not stored.
 func (u *UserModelMock) GetByEmail(email string) (*data.User, error) {
+	u.Lock()
+	defer u.Unlock()
+
 	for _, u := range u.users {
 		if u.Email == email {
 			return u, nil
@@ -56,31 +67,46 @@ func (u *UserModelMock) GetByEmail(email string) (*data.User, error) {
 // Returns data.ErrRecordNotFound error if a user with the given ID is not stored.
 // If the data store is empty and the provided user id is greater than 99, returns data.ErrRecordNotFound.
 func (u *UserModelMock) GetByID(id int64) (*data.User, error) {
+	u.Lock()
+	defer u.Unlock()
+
 	if u.users == nil {
 		if id > 99 {
 			return nil, data.ErrRecordNotFound
 		}
+
 		return &data.User{ID: id}, nil
 	}
 
-	for _, u := range u.users {
-		if u.ID == id {
-			return u, nil
+	for _, uRec := range u.users {
+		if uRec.ID == id {
+			return uRec, nil
 		}
 	}
-
 	return nil, data.ErrRecordNotFound
 }
 
 // Update mocks the update of a user from the model.
-// Does not provide any real functionality.
 func (u *UserModelMock) Update(user *data.User) error {
-	return nil
+	u.Lock()
+	defer u.Unlock()
+
+	for i := range u.users {
+		if u.users[i].ID == user.ID {
+			u.users[i] = user
+			return nil
+		}
+	}
+
+	return data.ErrRecordNotFound
 }
 
 // Delete mocks the deletion of a user from the model.
 // If the given id is not found, returns data.ErrRecordNotFound.
 func (u *UserModelMock) Delete(id int64) error {
+	u.Lock()
+	defer u.Unlock()
+
 	for i, user := range u.users {
 		if user.ID == id {
 			u.users = slices.Delete(u.users, i, i+1)
@@ -93,5 +119,8 @@ func (u *UserModelMock) Delete(id int64) error {
 // GetForStatefulToken mocks the retieval of a user from the model based on its token.
 // Does not provide any real functionality.
 func (u *UserModelMock) GetForStatefulToken(tokenScope, tokenPlaintext string) (*data.User, error) {
+	u.Lock()
+	defer u.Unlock()
+
 	return &data.User{}, nil
 }

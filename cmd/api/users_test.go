@@ -167,7 +167,7 @@ func compareUsers(u1 *data.User, u2 *data.User) bool {
 // TestUpdateUserHandler implement unti tests for updateUserHandler.
 func TestUpdateUserHandler(t *testing.T) {
 
-	testUser := &data.User{
+	testUser := data.User{
 		ID:    1,
 		Name:  "Dummy Username",
 		Email: "test@example.com",
@@ -195,15 +195,15 @@ func TestUpdateUserHandler(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:               "happy path",
-			users:              []*data.User{testUser},
+			users:              []*data.User{&testUser},
 			pathParam:          1,
 			input:              inputBody{Name: testUser.Name, Email: testUser.Email},
 			expectedStatusCode: http.StatusOK,
-			expectedUser:       testUser,
+			expectedUser:       &testUser,
 		},
 		{
 			name:               "invalid path param",
-			users:              []*data.User{testUser},
+			users:              []*data.User{&testUser},
 			pathParam:          0,
 			input:              inputBody{Name: testUser.Name, Email: testUser.Email},
 			expectedStatusCode: http.StatusNotFound,
@@ -211,7 +211,7 @@ func TestUpdateUserHandler(t *testing.T) {
 		},
 		{
 			name:               "non existent user",
-			users:              []*data.User{testUser},
+			users:              []*data.User{&testUser},
 			pathParam:          11,
 			input:              inputBody{Name: testUser.Name, Email: testUser.Email},
 			expectedStatusCode: http.StatusNotFound,
@@ -219,7 +219,7 @@ func TestUpdateUserHandler(t *testing.T) {
 		},
 		{
 			name:               "non valid name",
-			users:              []*data.User{testUser},
+			users:              []*data.User{&testUser},
 			pathParam:          1,
 			input:              inputBody{Name: "", Email: testUser.Email},
 			expectedStatusCode: http.StatusUnprocessableEntity,
@@ -227,7 +227,7 @@ func TestUpdateUserHandler(t *testing.T) {
 		},
 		{
 			name:               "non valid email",
-			users:              []*data.User{testUser},
+			users:              []*data.User{&testUser},
 			pathParam:          1,
 			input:              inputBody{Name: testUser.Name, Email: ""},
 			expectedStatusCode: http.StatusUnprocessableEntity,
@@ -235,7 +235,7 @@ func TestUpdateUserHandler(t *testing.T) {
 		},
 		{
 			name:               "perform update",
-			users:              []*data.User{testUser},
+			users:              []*data.User{&testUser},
 			pathParam:          1,
 			input:              inputBody{Name: "NewName", Email: "NewEmail@example.com"},
 			expectedStatusCode: http.StatusOK,
@@ -518,6 +518,7 @@ func TestRegisterUserHandler(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
 			app := &application{
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
@@ -616,4 +617,161 @@ func TestRegisterUserHandler(t *testing.T) {
 		})
 	}
 
+}
+
+// TestUpdatePasswordHandler implements unit tests for updatePasswordHandler.
+func TestUpdatePasswordHandler(t *testing.T) {
+
+	testUser := data.User{
+		ID:    1,
+		Name:  "Dummy Username",
+		Email: "test@example.com",
+	}
+
+	err := testUser.Password.Set("asd123asd123")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type inputType struct {
+		Password    string `json:"password"`
+		NewPassword string `json:"new_password"`
+	}
+
+	type testCase struct {
+		name               string
+		inputPath          string
+		input              inputType
+		user               data.User
+		expectedStatusCode int
+		shouldCheckModel   bool
+	}
+
+	testCases := []testCase{
+		{
+			name:      "happy path",
+			inputPath: "1",
+			input: inputType{
+				Password:    "asd123asd123",
+				NewPassword: "123qwe123qwe",
+			},
+			user:               testUser,
+			expectedStatusCode: http.StatusOK,
+			shouldCheckModel:   true,
+		},
+		{
+			name:      "happy path2",
+			inputPath: "1",
+			input: inputType{
+				Password:    "asd123asd123",
+				NewPassword: "newpass1111",
+			},
+			user:               testUser,
+			expectedStatusCode: http.StatusOK,
+			shouldCheckModel:   true,
+		},
+		{
+			name:      "invalid url path",
+			inputPath: "Nan",
+			input: inputType{
+				Password:    "asd123asd123",
+				NewPassword: "newpass1111",
+			},
+			user:               testUser,
+			expectedStatusCode: http.StatusNotFound,
+			shouldCheckModel:   false,
+		},
+		{
+			name:      "non exestent url path",
+			inputPath: "111",
+			input: inputType{
+				Password:    "asd123asd123",
+				NewPassword: "newpass1111",
+			},
+			user:               testUser,
+			expectedStatusCode: http.StatusNotFound,
+			shouldCheckModel:   false,
+		},
+		{
+			name:      "non matching pass",
+			inputPath: "1",
+			input: inputType{
+				Password:    "asd123as23232323",
+				NewPassword: "newpass1111",
+			},
+			user:               testUser,
+			expectedStatusCode: http.StatusBadRequest,
+			shouldCheckModel:   false,
+		},
+		{
+			name:      "not valid new pass",
+			inputPath: "1",
+			input: inputType{
+				Password:    "asd123asd123",
+				NewPassword: "new",
+			},
+			user:               testUser,
+			expectedStatusCode: http.StatusUnprocessableEntity,
+			shouldCheckModel:   true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			app := &application{
+				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+				models: data.Models{Users: mocks.NewUserModelMock([]*data.User{&tc.user})},
+			}
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("POST /{id}", app.updatePasswordHandler)
+
+			ts := httptest.NewServer(mux)
+			defer ts.Close()
+
+			path := fmt.Sprintf("%s/%s", ts.URL, tc.inputPath)
+
+			bs, err := json.Marshal(tc.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			req, err := http.NewRequest("POST", path, bytes.NewBuffer(bs))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if tc.expectedStatusCode != resp.StatusCode {
+				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, resp.StatusCode)
+			}
+
+			if tc.shouldCheckModel {
+				id, err := strconv.Atoi(tc.inputPath)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				user, err := app.models.Users.GetByID(int64(id))
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				isPassMatch, err := user.Password.Matches(tc.input.NewPassword)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if !isPassMatch {
+					t.Error(`Updated password should match the NewPassword`)
+				}
+			}
+		})
+	}
 }

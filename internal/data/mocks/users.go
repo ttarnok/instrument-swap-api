@@ -26,6 +26,11 @@ func NewUserModelMock(users []*data.User) *UserModelMock {
 // Insert mocks the instertion of a new user into the model.
 // Does not provide any real functionality.
 func (u *UserModelMock) Insert(user *data.User) error {
+	for _, u := range u.users {
+		if u.Email == user.Email {
+			return data.ErrDuplicateEmail
+		}
+	}
 	u.users = append(u.users, user)
 	return nil
 }

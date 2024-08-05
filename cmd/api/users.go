@@ -119,6 +119,7 @@ func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request
 
 }
 
+// registerUserHandler handles the registration of a new user.
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {

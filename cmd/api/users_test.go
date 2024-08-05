@@ -240,10 +240,10 @@ func TestUpdateUserHandler(t *testing.T) {
 			input:              inputBody{Name: "NewName", Email: "NewEmail@example.com"},
 			expectedStatusCode: http.StatusOK,
 			expectedUser: &data.User{
-					ID:    1,
-					Name:  "NewName",
-					Email: "NewEmail@example.com",
-				},
+				ID:    1,
+				Name:  "NewName",
+				Email: "NewEmail@example.com",
+			},
 		},
 	}
 
@@ -426,4 +426,194 @@ func TestDeleteUserHandler(t *testing.T) {
 
 		})
 	}
+}
+
+// TestRegisterUserHandler unit tests registerUserHandler.
+func TestRegisterUserHandler(t *testing.T) {
+
+	testUsers := []*data.User{
+		{
+			ID:    1,
+			Name:  "Dummy Username",
+			Email: "test@example.com",
+		},
+		{
+			ID:    2,
+			Name:  "Other Temp User",
+			Email: "temp@example.com",
+		},
+	}
+
+	type inputType struct {
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	type testCase struct {
+		name               string
+		input              inputType
+		expectedStatusCode int
+		shouldCheckBody    bool
+	}
+
+	testCases := []testCase{
+		{
+			name: "happy path",
+			input: inputType{
+				Name:     "Test User",
+				Email:    "test@email.com",
+				Password: "asd123asd123",
+			},
+			expectedStatusCode: http.StatusCreated,
+			shouldCheckBody:    true,
+		},
+		{
+			name: "empty password",
+			input: inputType{
+				Name:     "Test User",
+				Email:    "test@email.com",
+				Password: "",
+			},
+			expectedStatusCode: http.StatusUnprocessableEntity,
+			shouldCheckBody:    false,
+		},
+		{
+			name: "empty email",
+			input: inputType{
+				Name:     "Test User",
+				Email:    "",
+				Password: "asd123asd123",
+			},
+			expectedStatusCode: http.StatusUnprocessableEntity,
+			shouldCheckBody:    false,
+		},
+		{
+			name: "empty username",
+			input: inputType{
+				Name:     "",
+				Email:    "test@email.com",
+				Password: "asd123asd123",
+			},
+			expectedStatusCode: http.StatusUnprocessableEntity,
+			shouldCheckBody:    false,
+		},
+		{
+			name:               "empty input",
+			input:              inputType{},
+			expectedStatusCode: http.StatusUnprocessableEntity,
+			shouldCheckBody:    false,
+		},
+		{
+			name: "already existing email",
+			input: inputType{
+				Name:     "Test User",
+				Email:    "test@example.com",
+				Password: "asd123asd123",
+			},
+			expectedStatusCode: http.StatusUnprocessableEntity,
+			shouldCheckBody:    false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			app := &application{
+				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+				models: data.Models{Users: mocks.NewUserModelMock(testUsers)},
+			}
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("POST /test", app.registerUserHandler)
+
+			ts := httptest.NewServer(mux)
+			defer ts.Close()
+
+			path := fmt.Sprintf("%s/test", ts.URL)
+
+			bs, err := json.Marshal(tc.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			req, err := http.NewRequest("POST", path, bytes.NewBuffer(bs))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if tc.expectedStatusCode != resp.StatusCode {
+				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, resp.StatusCode)
+			}
+
+			if tc.shouldCheckBody {
+				defer func() {
+					err := resp.Body.Close()
+					if err != nil {
+						t.Fatal(err)
+					}
+				}()
+
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				respEnvelope := make(envelope)
+
+				err = json.Unmarshal(body, &respEnvelope)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				respAnySlice, ok := respEnvelope["user"]
+				if !ok {
+					t.Fatal(`the response does not contain an enveloped user`)
+				}
+				buf := new(bytes.Buffer)
+				err = json.NewEncoder(buf).Encode(respAnySlice)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				var user *data.User
+
+				err = json.NewDecoder(buf).Decode(&user)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if tc.input.Name != user.Name {
+					t.Errorf(`Expected user name "%s", got "%s"`, tc.input.Name, user.Name)
+				}
+
+				if tc.input.Email != user.Email {
+					t.Errorf(`Expected user email "%s", got "%s"`, tc.input.Email, user.Email)
+				}
+
+				user, err = app.models.Users.GetByEmail(tc.input.Email)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				isPassMatch, err := user.Password.Matches(tc.input.Password)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if !isPassMatch {
+					t.Errorf(`expected matching passwords`)
+				}
+
+			}
+
+		})
+	}
+
 }

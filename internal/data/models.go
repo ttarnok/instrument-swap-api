@@ -33,6 +33,7 @@ type UserModeler interface {
 	Delete(id int64) error
 }
 
+// SwapModeler abstract the model for swaps.
 type SwapModeler interface {
 	GetAllForUser(userID int64) ([]*Swap, error)
 	Get(id int64) (*Swap, error)

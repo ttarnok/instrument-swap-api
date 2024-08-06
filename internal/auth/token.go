@@ -41,6 +41,17 @@ func (t *JwtTokenFactory) NewToken(userID int64) ([]byte, error) {
 	return jwtBytes, nil
 }
 
+// IsValid returns whether the claims set may be accepted for processing at the moment of execution.
+func (t *JwtTokenFactory) IsValid(token []byte) bool {
+
+	claims, err := jwt.HMACCheck([]byte(token), []byte(t.secret))
+	if err != nil {
+		return false
+	}
+
+	return claims.Valid(time.Now())
+}
+
 // ParseClaims validates a token.
 // Returns an error if the token is not valid.
 func (t *JwtTokenFactory) ParseClaims(token []byte) (Claims, error) {
@@ -51,8 +62,13 @@ func (t *JwtTokenFactory) ParseClaims(token []byte) (Claims, error) {
 		return Claims{}, err
 	}
 
-	if !claims.Valid(time.Now()) {
-		return Claims{}, errors.New("expired token")
+	tokenType, ok := claims.Set["token_type"].(string)
+	if !ok {
+		return Claims{}, errors.New("should contain token_type claim")
+	}
+
+	if tokenType != t.tokenType {
+		return Claims{}, errors.New("incorrect token type")
 	}
 
 	if claims.Issuer != "instrument-swap.example.example" {
@@ -61,15 +77,6 @@ func (t *JwtTokenFactory) ParseClaims(token []byte) (Claims, error) {
 
 	if !claims.AcceptAudience("instrument-swap.example.example") {
 		return Claims{}, errors.New("invalid aqccepted audience")
-	}
-
-	tokenType, ok := claims.Set["token_type"].(string)
-	if !ok {
-		return Claims{}, errors.New("should contain token_type claim")
-	}
-
-	if tokenType != t.tokenType {
-		return Claims{}, errors.New("incorrect token type")
 	}
 
 	return Claims{Subject: claims.Subject}, nil

@@ -31,9 +31,9 @@ that provides functionality for musicians to swap each other's instruments.
 - [X] POST   /v1/swaps/{id}/reject // Rejects a swap request
 - [X] DELETE /v1/swaps/{id} // Ends an instrument swap
 
-- [ ] POST   /v1/tokens/authentication // Return a new Access Token + Refresh
-- [ ] POST   /v1/tokens/refresh // Return a new Access Token
-- [ ] POST   /v1/tokens/blacklist // Blacklists a refresh token
+- [X] POST   /v1/token // Return a new Access Token + Refresh Token
+- [X] POST   /v1/token/refresh // Return a new Access Token
+- [ ] POST   /v1/token/blacklist // Blacklists a refresh token
 - [ ] POST   /v1/logout // Logs out the current user
 
 - [X] GET    /v1/liveliness

@@ -23,6 +23,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("DELETE /v1/users/{id}", app.deleteUserHandler)
 
 	mux.HandleFunc("POST /v1/token", app.loginHandler)
+	mux.HandleFunc("POST /v1/token/refresh", app.refreshHandler)
 
 	mux.HandleFunc("GET /v1/swaps", app.requireActivatedUser(app.listSwapsHandler))
 	mux.HandleFunc("POST /v1/swaps", app.requireActivatedUser(app.createSwapHandler))

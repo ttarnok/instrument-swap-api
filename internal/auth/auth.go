@@ -12,6 +12,7 @@ type Claims struct {
 type TokenProvider interface {
 	NewToken(userID int64) ([]byte, error)
 	ParseClaims(token []byte) (Claims, error)
+	IsValid(token []byte) bool
 }
 
 // Auth provides authentication functionality for the application.

@@ -117,6 +117,11 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 			return
 		}
 
+		if !app.auth.AccessToken.IsValid([]byte(token)) {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
 		userID, err := strconv.ParseInt(claims.Subject, 10, 64)
 		if err != nil {
 			app.serverErrorLogResponse(w, r, err)

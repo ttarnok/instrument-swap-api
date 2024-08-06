@@ -3,12 +3,13 @@ package main
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/ttarnok/instrument-swap-api/internal/data"
 	"github.com/ttarnok/instrument-swap-api/internal/validator"
 )
 
-// createAuthenticationTokenHandler implements a handler that respond with auth tokens.
+// loginHandler implements a handler that respond with auth and refresh tokens.
 func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {
@@ -65,6 +66,78 @@ func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = app.writeJSON(w, http.StatusCreated, envelope{"access": string(jwtBytesAccess), "refresh": string(jwtBytesRefresh)}, nil)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+}
+
+// refreshHandler handles new access token generation.
+func (app *application) refreshHandler(w http.ResponseWriter, r *http.Request) {
+
+	var input struct {
+		AccessToken  string `json:"access"`
+		RefreshToken string `json:"refresh"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	accessClaims, err := app.auth.AccessToken.ParseClaims([]byte(input.AccessToken))
+	if err != nil {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+
+	if app.auth.AccessToken.IsValid([]byte(input.AccessToken)) {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+
+	refreshClaims, err := app.auth.RefreshToken.ParseClaims([]byte(input.RefreshToken))
+	if err != nil {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+
+	if !app.auth.RefreshToken.IsValid([]byte(input.RefreshToken)) {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+
+	if accessClaims.Subject != refreshClaims.Subject {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+
+	userID, err := strconv.ParseInt(refreshClaims.Subject, 10, 64)
+	if err != nil {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+
+	user, err := app.models.Users.GetByID(userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.invalidCredentialsResponse(w, r)
+		default:
+			app.serverErrorLogResponse(w, r, err)
+		}
+		return
+	}
+
+	jwtBytesAccess, err := app.auth.AccessToken.NewToken(user.ID)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusCreated, envelope{"access": string(jwtBytesAccess)}, nil)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
 		return

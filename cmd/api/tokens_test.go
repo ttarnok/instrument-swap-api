@@ -84,7 +84,7 @@ func TestCreateAuthenticationTokenHandler(t *testing.T) {
 			}
 
 			mux := http.NewServeMux()
-			mux.HandleFunc("POST /", app.createAuthenticationTokenHandler)
+			mux.HandleFunc("POST /", app.loginHandler)
 
 			ts := httptest.NewServer(mux)
 			defer ts.Close()
@@ -132,25 +132,56 @@ func TestCreateAuthenticationTokenHandler(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				respAnySlice, ok := respEnvelope["authentication_token"]
+				respAccessToken, ok := respEnvelope["access"]
 				if !ok {
-					t.Fatal(`the response does not contain an enveloped authentication_token`)
+					t.Fatal(`the response does not contain an enveloped access token`)
 				}
 				buf := new(bytes.Buffer)
-				err = json.NewEncoder(buf).Encode(respAnySlice)
+				err = json.NewEncoder(buf).Encode(respAccessToken)
 				if err != nil {
 					t.Fatal(err)
 				}
 
-				var authenticationToken string
+				var accessToken string
 
-				err = json.NewDecoder(buf).Decode(&authenticationToken)
+				err = json.NewDecoder(buf).Decode(&accessToken)
 				if err != nil {
 					t.Fatal(err)
 				}
 
-				if len(authenticationToken) == 0 {
-					t.Error(`should respont a non 0 length auth token`)
+				if len(accessToken) == 0 {
+					t.Error(`should respont a non 0 length access token`)
+				}
+
+				_, err = app.auth.AccessToken.ParseClaims([]byte(accessToken))
+				if err != nil {
+					t.Errorf(`access token do not parse due to: "%s"`, err.Error())
+				}
+
+				respRefreshToken, ok := respEnvelope["refresh"]
+				if !ok {
+					t.Fatal(`the response does not contain an enveloped refresh token`)
+				}
+				buf = new(bytes.Buffer)
+				err = json.NewEncoder(buf).Encode(respRefreshToken)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				var refreshToken string
+
+				err = json.NewDecoder(buf).Decode(&refreshToken)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if len(refreshToken) == 0 {
+					t.Error(`should respont a non 0 length refresh token`)
+				}
+
+				_, err = app.auth.RefreshToken.ParseClaims([]byte(refreshToken))
+				if err != nil {
+					t.Errorf(`refresh token do not parse due to: "%s"`, err.Error())
 				}
 			}
 

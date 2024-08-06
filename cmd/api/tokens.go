@@ -9,7 +9,7 @@ import (
 )
 
 // createAuthenticationTokenHandler implements a handler that respond with auth tokens.
-func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {
 		Email    string `json:"email"`
@@ -52,13 +52,19 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 		return
 	}
 
-	jwtBytes, err := app.auth.AccessToken.New(user.ID)
+	jwtBytesAccess, err := app.auth.AccessToken.NewToken(user.ID)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusCreated, envelope{"authentication_token": string(jwtBytes)}, nil)
+	jwtBytesRefresh, err := app.auth.RefreshToken.NewToken(user.ID)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusCreated, envelope{"access": string(jwtBytesAccess), "refresh": string(jwtBytesRefresh)}, nil)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
 		return

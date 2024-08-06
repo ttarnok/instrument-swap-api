@@ -115,12 +115,3 @@ func (u *UserModelMock) Delete(id int64) error {
 	}
 	return data.ErrRecordNotFound
 }
-
-// GetForStatefulToken mocks the retieval of a user from the model based on its token.
-// Does not provide any real functionality.
-func (u *UserModelMock) GetForStatefulToken(tokenScope, tokenPlaintext string) (*data.User, error) {
-	u.Lock()
-	defer u.Unlock()
-
-	return &data.User{}, nil
-}

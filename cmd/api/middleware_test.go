@@ -209,9 +209,10 @@ func TestAuthenticate(t *testing.T) {
 	claims.Subject = strconv.FormatInt(1, 10)
 	claims.Issued = jwt.NewNumericTime(time.Now())
 	claims.NotBefore = jwt.NewNumericTime(time.Now())
-	claims.Expires = jwt.NewNumericTime(time.Now().Add(24 * time.Hour))
+	claims.Expires = jwt.NewNumericTime(time.Now().Add(5 * time.Minute))
 	claims.Issuer = "instrument-swap.example.example"
 	claims.Audiences = []string{"instrument-swap.example.example"}
+	claims.Set = map[string]interface{}{"token_type": "access"}
 
 	validJWTBytes, err := claims.HMACSign(jwt.HS256, []byte(testSecret))
 	if err != nil {
@@ -221,9 +222,10 @@ func TestAuthenticate(t *testing.T) {
 	claims.Subject = strconv.FormatInt(1, 10)
 	claims.Issued = jwt.NewNumericTime(time.Now().Add(-48 * time.Hour))
 	claims.NotBefore = jwt.NewNumericTime(time.Now().Add(-48 * time.Hour))
-	claims.Expires = jwt.NewNumericTime(time.Now().Add(-48 * time.Hour).Add(24 * time.Hour))
+	claims.Expires = jwt.NewNumericTime(time.Now().Add(-48 * time.Hour).Add(5 * time.Minute))
 	claims.Issuer = "instrument-swap.example.example"
 	claims.Audiences = []string{"instrument-swap.example.example"}
+	claims.Set = map[string]interface{}{"token_type": "access"}
 	expiredJWTBytes, err := claims.HMACSign(jwt.HS256, []byte(testSecret))
 	if err != nil {
 		t.Fatal(err)

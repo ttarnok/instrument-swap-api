@@ -152,7 +152,7 @@ func (s *SwapModel) Get(id int64) (*Swap, error) {
 }
 
 // GetByInstrumentID returns swaps based on an instrument id.
-// Returns an error if the retrieval is not possible.
+// Returns ErrRecordNotFound if the given is is not found.
 func (s *SwapModel) GetByInstrumentID(id int64) (*Swap, error) {
 	if id < 1 {
 		return nil, ErrRecordNotFound
@@ -195,6 +195,7 @@ func (s *SwapModel) GetByInstrumentID(id int64) (*Swap, error) {
 	return &swap, nil
 }
 
+// Insert stores the given swap into the database.
 func (s *SwapModel) Insert(swap *Swap) error {
 
 	query := `
@@ -210,6 +211,8 @@ func (s *SwapModel) Insert(swap *Swap) error {
 		Scan(&swap.ID, &swap.CreatedAt, &swap.Version)
 }
 
+// Update updates the given swap in the database.
+// Returns ErrEditConflict in case of conflicting update.
 func (s *SwapModel) Update(swap *Swap) error {
 
 	query := `

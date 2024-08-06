@@ -57,6 +57,7 @@ func TestListUsersHandler(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			app := &application{
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 				models: data.Models{Users: mocks.NewUserModelMock(tc.users)},
@@ -167,17 +168,6 @@ func compareUsers(u1 *data.User, u2 *data.User) bool {
 // TestUpdateUserHandler implement unti tests for updateUserHandler.
 func TestUpdateUserHandler(t *testing.T) {
 
-	testUser := data.User{
-		ID:    1,
-		Name:  "Dummy Username",
-		Email: "test@example.com",
-	}
-
-	err := testUser.Password.Set("asd123asd123")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	type inputBody struct {
 		Name  string `json:"name"`
 		Email string `json:"email"`
@@ -185,7 +175,6 @@ func TestUpdateUserHandler(t *testing.T) {
 
 	type testCase struct {
 		name               string
-		users              []*data.User
 		pathParam          int
 		input              inputBody
 		expectedStatusCode int
@@ -195,47 +184,45 @@ func TestUpdateUserHandler(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:               "happy path",
-			users:              []*data.User{&testUser},
 			pathParam:          1,
-			input:              inputBody{Name: testUser.Name, Email: testUser.Email},
+			input:              inputBody{Name: "Dummy Username", Email: "test@example.com"},
 			expectedStatusCode: http.StatusOK,
-			expectedUser:       &testUser,
+			expectedUser: &data.User{
+				ID:    1,
+				Name:  "Dummy Username",
+				Email: "test@example.com",
+			},
 		},
 		{
 			name:               "invalid path param",
-			users:              []*data.User{&testUser},
 			pathParam:          0,
-			input:              inputBody{Name: testUser.Name, Email: testUser.Email},
+			input:              inputBody{Name: "Dummy Username", Email: "test@example.com"},
 			expectedStatusCode: http.StatusNotFound,
 			expectedUser:       nil,
 		},
 		{
 			name:               "non existent user",
-			users:              []*data.User{&testUser},
 			pathParam:          11,
-			input:              inputBody{Name: testUser.Name, Email: testUser.Email},
+			input:              inputBody{Name: "Dummy Username", Email: "test@example.com"},
 			expectedStatusCode: http.StatusNotFound,
 			expectedUser:       nil,
 		},
 		{
 			name:               "non valid name",
-			users:              []*data.User{&testUser},
 			pathParam:          1,
-			input:              inputBody{Name: "", Email: testUser.Email},
+			input:              inputBody{Name: "", Email: "test@example.com"},
 			expectedStatusCode: http.StatusUnprocessableEntity,
 			expectedUser:       nil,
 		},
 		{
 			name:               "non valid email",
-			users:              []*data.User{&testUser},
 			pathParam:          1,
-			input:              inputBody{Name: testUser.Name, Email: ""},
+			input:              inputBody{Name: "Dummy Username", Email: ""},
 			expectedStatusCode: http.StatusUnprocessableEntity,
 			expectedUser:       nil,
 		},
 		{
 			name:               "perform update",
-			users:              []*data.User{&testUser},
 			pathParam:          1,
 			input:              inputBody{Name: "NewName", Email: "NewEmail@example.com"},
 			expectedStatusCode: http.StatusOK,
@@ -249,10 +236,24 @@ func TestUpdateUserHandler(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			testUser := data.User{
+				ID:    1,
+				Name:  "Dummy Username",
+				Email: "test@example.com",
+			}
+
+			err := testUser.Password.Set("asd123asd123")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			users := []*data.User{&testUser}
 
 			app := &application{
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
-				models: data.Models{Users: mocks.NewUserModelMock(tc.users)},
+				models: data.Models{Users: mocks.NewUserModelMock(users)},
 			}
 
 			mux := http.NewServeMux()
@@ -384,7 +385,7 @@ func TestDeleteUserHandler(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
+			t.Parallel()
 			app := &application{
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 				models: data.Models{Users: mocks.NewUserModelMock(tc.users)},
@@ -654,17 +655,6 @@ func TestUpdatePasswordHandler(t *testing.T) {
 			input: inputType{
 				Password:    "asd123asd123",
 				NewPassword: "123qwe123qwe",
-			},
-			user:               testUser,
-			expectedStatusCode: http.StatusOK,
-			shouldCheckModel:   true,
-		},
-		{
-			name:      "happy path2",
-			inputPath: "1",
-			input: inputType{
-				Password:    "asd123asd123",
-				NewPassword: "newpass1111",
 			},
 			user:               testUser,
 			expectedStatusCode: http.StatusOK,

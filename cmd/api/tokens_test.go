@@ -280,6 +280,16 @@ func TestRefreshHandler(t *testing.T) {
 			blacklist:            []string{testTokenID2},
 		},
 		{
+			name:                 "blacklisted access token",
+			users:                []*data.User{testUser},
+			accessToken:          GenerateTestToken(testSecret, testTokenID1, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "access"),
+			refreshToken:         GenerateTestToken(testSecret, testTokenID2, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			expectedStatusCode:   http.StatusUnauthorized,
+			shouldValidateResult: false,
+			expectedUserID:       0,
+			blacklist:            []string{testTokenID1},
+		},
+		{
 			name:                 "non existent user id",
 			users:                []*data.User{testUser},
 			accessToken:          GenerateTestToken(testSecret, testTokenID1, 2, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "access"),
@@ -463,6 +473,117 @@ func TestRefreshHandler(t *testing.T) {
 				}
 
 			}
+		})
+	}
+}
+
+// TestBlacklistHandler unit tests blacklistHandler.
+func TestBlacklistHandler(t *testing.T) {
+
+	testUser := &data.User{
+		ID:    1,
+		Name:  "Dummy Username",
+		Email: "test@example.com",
+	}
+
+	testSecret := "secretsecretsecret"
+
+	type testCase struct {
+		name               string
+		users              []*data.User
+		refreshToken       []byte
+		expectedStatusCode int
+	}
+
+	testTokenID1 := uuid.NewString()
+
+	testCases := []testCase{
+		{
+			name:               "happy path",
+			users:              []*data.User{testUser},
+			refreshToken:       GenerateTestToken(testSecret, testTokenID1, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name:               "happy path2",
+			users:              []*data.User{testUser},
+			refreshToken:       GenerateTestToken(testSecret, testTokenID1, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name:               "different user id",
+			users:              []*data.User{testUser},
+			refreshToken:       GenerateTestToken(testSecret, testTokenID1, 2, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			expectedStatusCode: http.StatusUnauthorized,
+		},
+		{
+			name:               "different user id",
+			users:              []*data.User{testUser},
+			refreshToken:       GenerateTestToken(testSecret, testTokenID1, 2, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			expectedStatusCode: http.StatusUnauthorized,
+		},
+		{
+			name:               "expired token",
+			users:              []*data.User{testUser},
+			refreshToken:       GenerateTestToken(testSecret, testTokenID1, testUser.ID, time.Now().Add(-48*time.Hour), time.Now().Add(-48*time.Hour), time.Now().Add(-48.*time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			expectedStatusCode: http.StatusUnauthorized,
+		},
+		{
+			name:               "wrong issuer",
+			users:              []*data.User{testUser},
+			refreshToken:       GenerateTestToken(testSecret, testTokenID1, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "xx", "refresh"),
+			expectedStatusCode: http.StatusUnauthorized,
+		},
+		{
+			name:               "happy path2",
+			users:              []*data.User{testUser},
+			refreshToken:       GenerateTestToken(testSecret, testTokenID1, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "wrongtokentype"),
+			expectedStatusCode: http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			app := &application{
+				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+				models: data.Models{Users: mocks.NewUserModelMock(tc.users)},
+				auth:   auth.NewAuth(testSecret, mocks.NewBlacklistServiceMock()),
+			}
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("POST /", app.blacklistHandler)
+
+			ts := httptest.NewServer(mux)
+			defer ts.Close()
+
+			path := fmt.Sprintf("%s/", ts.URL)
+
+			type input struct {
+				RefreshToken string `json:"refresh"`
+			}
+
+			reqBody, err := json.Marshal(input{RefreshToken: string(tc.refreshToken)})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			req, err := http.NewRequest("POST", path, bytes.NewBuffer(reqBody))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if tc.expectedStatusCode != resp.StatusCode {
+				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, resp.StatusCode)
+			}
+
 		})
 	}
 }

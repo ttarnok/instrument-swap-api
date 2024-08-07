@@ -166,6 +166,13 @@ func (app *application) refreshHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Blacklist the access token.
+	err = app.auth.BlacklistToken.BlacklistToken(accessClaims.ID)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
 	// Generate new access token.
 	jwtBytesAccess, err := app.auth.AccessToken.NewToken(user.ID)
 	if err != nil {
@@ -174,6 +181,64 @@ func (app *application) refreshHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = app.writeJSON(w, http.StatusCreated, envelope{"access": string(jwtBytesAccess)}, nil)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+}
+
+// blacklistHandler blacklists the given refresh token.
+func (app *application) blacklistHandler(w http.ResponseWriter, r *http.Request) {
+
+	var input struct {
+		RefreshToken string `json:"refresh"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	// Parse the refresh token and check the fields.
+	refreshClaims, err := app.auth.RefreshToken.ParseClaims([]byte(input.RefreshToken))
+	if err != nil {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+
+	// Check refresh token validity.
+	if !app.auth.RefreshToken.IsValid([]byte(input.RefreshToken)) {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+
+	// Check whether the user is a valid user in the app.
+	userID, err := strconv.ParseInt(refreshClaims.Subject, 10, 64)
+	if err != nil {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+	_, err = app.models.Users.GetByID(userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.invalidCredentialsResponse(w, r)
+		default:
+			app.serverErrorLogResponse(w, r, err)
+		}
+		return
+	}
+
+	// Blacklist the token.
+	err = app.auth.BlacklistToken.BlacklistToken(refreshClaims.ID)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "The token has been successfully blacklisted."}, nil)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
 		return

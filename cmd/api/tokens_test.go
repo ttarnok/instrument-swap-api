@@ -488,14 +488,14 @@ func TestBlacklistHandler(t *testing.T) {
 
 	testSecret := "secretsecretsecret"
 
+	testTokenID1 := uuid.NewString()
+
 	type testCase struct {
 		name               string
 		users              []*data.User
 		refreshToken       []byte
 		expectedStatusCode int
 	}
-
-	testTokenID1 := uuid.NewString()
 
 	testCases := []testCase{
 		{

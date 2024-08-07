@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pascaldekloe/jwt"
 	"github.com/ttarnok/instrument-swap-api/internal/auth"
 	"github.com/ttarnok/instrument-swap-api/internal/data"
@@ -206,6 +207,7 @@ func TestAuthenticate(t *testing.T) {
 	testSecret := "secret"
 
 	var claims jwt.Claims
+	claims.ID = uuid.NewString()
 	claims.Subject = strconv.FormatInt(1, 10)
 	claims.Issued = jwt.NewNumericTime(time.Now())
 	claims.NotBefore = jwt.NewNumericTime(time.Now())
@@ -310,7 +312,7 @@ func TestAuthenticate(t *testing.T) {
 					models: data.Models{
 						Users: mocks.NewEmptyUserModelMock(),
 					},
-					auth:   auth.NewAuth(testSecret),
+					auth:   auth.NewAuth(testSecret, mocks.NewBlacklistServiceMock()),
 					logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 				}
 			} else {
@@ -318,7 +320,7 @@ func TestAuthenticate(t *testing.T) {
 					models: data.Models{
 						Users: mocks.NewUserModelMock([]*data.User{tc.expectedUser}),
 					},
-					auth:   auth.NewAuth(testSecret),
+					auth:   auth.NewAuth(testSecret, mocks.NewBlacklistServiceMock()),
 					logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 				}
 			}

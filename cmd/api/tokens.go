@@ -87,33 +87,61 @@ func (app *application) refreshHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse the access token and check the fields.
 	accessClaims, err := app.auth.AccessToken.ParseClaims([]byte(input.AccessToken))
 	if err != nil {
 		app.invalidCredentialsResponse(w, r)
 		return
 	}
 
+	// Check access token validity.
 	if app.auth.AccessToken.IsValid([]byte(input.AccessToken)) {
 		app.invalidCredentialsResponse(w, r)
 		return
 	}
 
+	// Check if the access token is blacklisted.
+	isBlacklisted, err := app.auth.BlacklistToken.IsTokenBlacklisted(accessClaims.ID)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+	if isBlacklisted {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+
+	// Parse the refresh token and check the fields.
 	refreshClaims, err := app.auth.RefreshToken.ParseClaims([]byte(input.RefreshToken))
 	if err != nil {
 		app.invalidCredentialsResponse(w, r)
 		return
 	}
 
+	// Check refresh token validity.
 	if !app.auth.RefreshToken.IsValid([]byte(input.RefreshToken)) {
 		app.invalidCredentialsResponse(w, r)
 		return
 	}
 
+	// Check if the access token is blacklisted.
+	isBlacklisted, err = app.auth.BlacklistToken.IsTokenBlacklisted(refreshClaims.ID)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+	if isBlacklisted {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+
+	// Check whether the two tokens belong to the same user.
 	if accessClaims.Subject != refreshClaims.Subject {
 		app.invalidCredentialsResponse(w, r)
 		return
 	}
 
+	// Check whether the user is a valid user in the app.
 	userID, err := strconv.ParseInt(refreshClaims.Subject, 10, 64)
 	if err != nil {
 		app.invalidCredentialsResponse(w, r)
@@ -131,6 +159,14 @@ func (app *application) refreshHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Blacklist the refresh token.
+	err = app.auth.BlacklistToken.BlacklistToken(refreshClaims.ID)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+	// Generate new access token.
 	jwtBytesAccess, err := app.auth.AccessToken.NewToken(user.ID)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)

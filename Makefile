@@ -30,7 +30,7 @@ build/api: code/fmt
 .PHONY: run/api
 run/api: build/api
 	@echo 'Running the application...'
-	@./bin/api -port=4000 -db-dsn=$(INSTRUMENT_SWAP_DB_DSN) -jwt-secret=$(JWT_SECRET)
+	@./bin/api -port=4000 -db-dsn=$(INSTRUMENT_SWAP_DB_DSN) -jwt-secret=$(JWT_SECRET) -redis-address=${REDIS_ADDR} -redis-password=${REDIS_PASSWORD} -redis-db=${REDIS_DB}
 
 ## docker/compose/up: runs docker compose up for the local dev db
 .PHONY: docker/compose/up

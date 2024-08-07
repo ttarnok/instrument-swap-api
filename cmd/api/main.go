@@ -32,6 +32,11 @@ type config struct {
 		maxIdleConns int
 		maxIdleTime  time.Duration
 	}
+	redis struct {
+		address  string
+		password string
+		db       int
+	}
 	limiter struct {
 		requestPerSecond float64
 		burst            int
@@ -69,6 +74,10 @@ func main() {
 
 	flag.StringVar(&cfg.jwt.secret, "jwt-secret", "", "JWT secret")
 
+	flag.StringVar(&cfg.redis.address, "redis-address", "", "Redis address")
+	flag.StringVar(&cfg.redis.password, "redis-password", "", "Redis password")
+	flag.IntVar(&cfg.redis.db, "redis-db", 0, "Redis database")
+
 	displayVersion := flag.Bool("version", false, "Display version and exit")
 
 	flag.Parse()
@@ -102,13 +111,24 @@ func main() {
 	logger.Info("database connection pool established")
 
 	// ----------------------------–----------------------------------------------
+	// Init Redis
+
+	redisClient, err := auth.NewBlacklistRedisClient(cfg.redis.address, cfg.redis.password, cfg.redis.db)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	logger.Info("Redis connection established")
+
+	// ----------------------------–----------------------------------------------
 	// Init and Stratup Server
 
 	app := application{
 		config: cfg,
 		logger: logger,
 		models: data.NewModel(db),
-		auth:   auth.NewAuth(cfg.jwt.secret),
+		auth:   auth.NewAuth(cfg.jwt.secret, auth.NewBlacklistService(redisClient)),
 	}
 
 	err = app.serve()

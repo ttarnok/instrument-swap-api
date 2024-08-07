@@ -79,5 +79,5 @@ func (t *JwtTokenFactory) ParseClaims(token []byte) (Claims, error) {
 		return Claims{}, errors.New("invalid aqccepted audience")
 	}
 
-	return Claims{Subject: claims.Subject}, nil
+	return Claims{ID: claims.ID, Subject: claims.Subject}, nil
 }

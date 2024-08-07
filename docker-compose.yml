@@ -14,3 +14,10 @@ services:
       - ./init-scripts:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+
+  redis:
+    image: redis:alpine
+    container_name: instrument-swap-redis
+    restart: always
+    ports:
+      - "6379:6379"

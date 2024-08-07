@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pascaldekloe/jwt"
 	"github.com/ttarnok/instrument-swap-api/internal/auth"
 	"github.com/ttarnok/instrument-swap-api/internal/data"
@@ -55,6 +56,13 @@ func TestLoginHandler(t *testing.T) {
 			shouldCheckBody:    true,
 		},
 		{
+			name:               "blacklisted refresh token",
+			users:              []*data.User{testUser},
+			rb:                 requestBody{Email: "test@example.com", Password: "123qwe123qwe"},
+			expectedStatusCode: http.StatusCreated,
+			shouldCheckBody:    true,
+		},
+		{
 			name:               "non valid password",
 			users:              []*data.User{testUser},
 			rb:                 requestBody{Email: "test@example.com", Password: "123"},
@@ -79,11 +87,12 @@ func TestLoginHandler(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
 			app := &application{
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 				models: data.Models{Users: mocks.NewUserModelMock(tc.users)},
-				auth:   auth.NewAuth("secretsecretsecret"),
+				auth:   auth.NewAuth("secretsecretsecret", mocks.NewBlacklistServiceMock()),
 			}
 
 			mux := http.NewServeMux()
@@ -201,9 +210,11 @@ func TestLoginHandler(t *testing.T) {
 
 }
 
-func GenerateTestToken(secret string, subject int64, issued time.Time, notBefore time.Time, expires time.Time, issuer string, tokenType string) []byte {
+// GenerateTestToken generates a jwt token for testing purposes.
+func GenerateTestToken(secret string, id string, subject int64, issued time.Time, notBefore time.Time, expires time.Time, issuer string, tokenType string) []byte {
 
 	var claims jwt.Claims
+	claims.ID = id
 	claims.Subject = strconv.FormatInt(subject, 10)
 	claims.Issued = jwt.NewNumericTime(issued)
 	claims.NotBefore = jwt.NewNumericTime(notBefore)
@@ -239,98 +250,124 @@ func TestRefreshHandler(t *testing.T) {
 		expectedStatusCode   int
 		shouldValidateResult bool
 		expectedUserID       int64
+		blacklist            []string
 	}
+
+	testTokenID1 := uuid.NewString()
+	testTokenID2 := uuid.NewString()
+	// testTokenID3 := uuid.NewString()
+	// testTokenID4 := uuid.NewString()
 
 	testCases := []testCase{
 		{
 			name:                 "happy path",
 			users:                []*data.User{testUser},
-			accessToken:          GenerateTestToken(testSecret, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "access"),
-			refreshToken:         GenerateTestToken(testSecret, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			accessToken:          GenerateTestToken(testSecret, testTokenID1, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "access"),
+			refreshToken:         GenerateTestToken(testSecret, testTokenID2, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
 			expectedStatusCode:   http.StatusCreated,
 			shouldValidateResult: true,
 			expectedUserID:       testUser.ID,
+			blacklist:            nil,
+		},
+		{
+			name:                 "blacklisted refresh token",
+			users:                []*data.User{testUser},
+			accessToken:          GenerateTestToken(testSecret, testTokenID1, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "access"),
+			refreshToken:         GenerateTestToken(testSecret, testTokenID2, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			expectedStatusCode:   http.StatusUnauthorized,
+			shouldValidateResult: false,
+			expectedUserID:       0,
+			blacklist:            []string{testTokenID2},
 		},
 		{
 			name:                 "non existent user id",
 			users:                []*data.User{testUser},
-			accessToken:          GenerateTestToken(testSecret, 2, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "access"),
-			refreshToken:         GenerateTestToken(testSecret, 2, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			accessToken:          GenerateTestToken(testSecret, testTokenID1, 2, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "access"),
+			refreshToken:         GenerateTestToken(testSecret, testTokenID2, 2, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
 			expectedStatusCode:   http.StatusUnauthorized,
 			shouldValidateResult: false,
 			expectedUserID:       0,
+			blacklist:            nil,
 		},
 		{
 			name:                 "wrong secret",
 			users:                []*data.User{testUser},
-			accessToken:          GenerateTestToken("wring secret", testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "access"),
-			refreshToken:         GenerateTestToken("wrong secret", testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			accessToken:          GenerateTestToken("wring secret", testTokenID1, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "access"),
+			refreshToken:         GenerateTestToken("wrong secret", testTokenID2, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
 			expectedStatusCode:   http.StatusUnauthorized,
 			shouldValidateResult: false,
 			expectedUserID:       0,
+			blacklist:            nil,
 		},
 		{
 			name:                 "not expired access token",
 			users:                []*data.User{testUser},
-			accessToken:          GenerateTestToken(testSecret, testUser.ID, time.Now(), time.Now(), time.Now().Add(5*time.Minute), "instrument-swap.example.example", "access"),
-			refreshToken:         GenerateTestToken(testSecret, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			accessToken:          GenerateTestToken(testSecret, testTokenID1, testUser.ID, time.Now(), time.Now(), time.Now().Add(5*time.Minute), "instrument-swap.example.example", "access"),
+			refreshToken:         GenerateTestToken(testSecret, testTokenID2, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
 			expectedStatusCode:   http.StatusUnauthorized,
 			shouldValidateResult: false,
 			expectedUserID:       0,
+			blacklist:            nil,
 		},
 		{
 			name:                 "expired refresh token",
 			users:                []*data.User{testUser},
-			accessToken:          GenerateTestToken(testSecret, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "access"),
-			refreshToken:         GenerateTestToken(testSecret, testUser.ID, time.Now().Add(-48*time.Hour), time.Now().Add(-48*time.Hour), time.Now().Add(-48*time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			accessToken:          GenerateTestToken(testSecret, testTokenID1, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "access"),
+			refreshToken:         GenerateTestToken(testSecret, testTokenID2, testUser.ID, time.Now().Add(-48*time.Hour), time.Now().Add(-48*time.Hour), time.Now().Add(-48*time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
 			expectedStatusCode:   http.StatusUnauthorized,
 			shouldValidateResult: false,
 			expectedUserID:       0,
+			blacklist:            nil,
 		},
 		{
 			name:                 "wrong access token type",
 			users:                []*data.User{testUser},
-			accessToken:          GenerateTestToken(testSecret, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "accessxxx"),
-			refreshToken:         GenerateTestToken(testSecret, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			accessToken:          GenerateTestToken(testSecret, testTokenID1, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "accessxxx"),
+			refreshToken:         GenerateTestToken(testSecret, testTokenID2, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
 			expectedStatusCode:   http.StatusUnauthorized,
 			shouldValidateResult: false,
 			expectedUserID:       0,
+			blacklist:            nil,
 		},
 		{
 			name:                 "no access token",
 			users:                []*data.User{testUser},
-			accessToken:          GenerateTestToken(testSecret, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "refresh"),
-			refreshToken:         GenerateTestToken(testSecret, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			accessToken:          GenerateTestToken(testSecret, testTokenID1, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "refresh"),
+			refreshToken:         GenerateTestToken(testSecret, testTokenID2, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
 			expectedStatusCode:   http.StatusUnauthorized,
 			shouldValidateResult: false,
 			expectedUserID:       0,
+			blacklist:            nil,
 		},
 		{
 			name:                 "not matching user ids",
 			users:                []*data.User{testUser},
-			accessToken:          GenerateTestToken(testSecret, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "access"),
-			refreshToken:         GenerateTestToken(testSecret, 2, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			accessToken:          GenerateTestToken(testSecret, testTokenID1, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "instrument-swap.example.example", "access"),
+			refreshToken:         GenerateTestToken(testSecret, testTokenID2, 2, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
 			expectedStatusCode:   http.StatusUnauthorized,
 			shouldValidateResult: false,
 			expectedUserID:       0,
+			blacklist:            nil,
 		},
 		{
 			name:                 "wrong issuer",
 			users:                []*data.User{testUser},
-			accessToken:          GenerateTestToken(testSecret, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "xx", "access"),
-			refreshToken:         GenerateTestToken(testSecret, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
+			accessToken:          GenerateTestToken(testSecret, testTokenID1, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(5*time.Minute), "xx", "access"),
+			refreshToken:         GenerateTestToken(testSecret, testTokenID2, testUser.ID, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour), time.Now().Add(-time.Hour).Add(24*time.Hour), "instrument-swap.example.example", "refresh"),
 			expectedStatusCode:   http.StatusUnauthorized,
 			shouldValidateResult: false,
 			expectedUserID:       0,
+			blacklist:            nil,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			app := &application{
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 				models: data.Models{Users: mocks.NewUserModelMock(tc.users)},
-				auth:   auth.NewAuth(testSecret),
+				auth:   auth.NewAuth(testSecret, mocks.NewBlacklistServiceMockWithData(tc.blacklist)),
 			}
 
 			mux := http.NewServeMux()

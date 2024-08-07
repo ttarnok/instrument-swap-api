@@ -33,8 +33,8 @@ that provides functionality for musicians to swap each other's instruments.
 
 - [X] POST   /v1/token // Return a new Access Token + Refresh Token
 - [X] POST   /v1/token/refresh // Return a new Access Token
-- [ ] POST   /v1/token/blacklist // Blacklists a refresh token
-- [ ] POST   /v1/logout // Logs out the current user
+- [X] POST   /v1/token/blacklist // Blacklists a refresh token
+- [X] POST   /v1/token/logout // Blacklists the given access and refresh tokens
 
 - [X] GET    /v1/liveliness
 - [ ] GET    /v1/readyness

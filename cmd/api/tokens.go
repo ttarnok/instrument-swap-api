@@ -94,7 +94,7 @@ func (app *application) refreshHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check access token validity.
+	// Check access token validity. (Should not be valid.)
 	if app.auth.AccessToken.IsValid([]byte(input.AccessToken)) {
 		app.invalidCredentialsResponse(w, r)
 		return
@@ -239,6 +239,102 @@ func (app *application) blacklistHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"message": "The token has been successfully blacklisted."}, nil)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+}
+
+// logoutHandler handles logout functionality.
+func (app *application) logoutHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		AccessToken  string `json:"access"`
+		RefreshToken string `json:"refresh"`
+	}
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	// Parse the access token and check the fields.
+	accessClaims, err := app.auth.AccessToken.ParseClaims([]byte(input.AccessToken))
+	if err != nil {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+	// Check access token validity.
+	if !app.auth.AccessToken.IsValid([]byte(input.AccessToken)) {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+	// Check if the access token is blacklisted.
+	isBlacklisted, err := app.auth.BlacklistToken.IsTokenBlacklisted(accessClaims.ID)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+	if isBlacklisted {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+	// Parse the refresh token and check the fields.
+	refreshClaims, err := app.auth.RefreshToken.ParseClaims([]byte(input.RefreshToken))
+	if err != nil {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+	// Check refresh token validity.
+	if !app.auth.RefreshToken.IsValid([]byte(input.RefreshToken)) {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+	// Check if the access token is blacklisted.
+	isBlacklisted, err = app.auth.BlacklistToken.IsTokenBlacklisted(refreshClaims.ID)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+	if isBlacklisted {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+	// Check whether the two tokens belong to the same user.
+	if accessClaims.Subject != refreshClaims.Subject {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+	// Check whether the user is a valid user in the app.
+	userID, err := strconv.ParseInt(refreshClaims.Subject, 10, 64)
+	if err != nil {
+		app.invalidCredentialsResponse(w, r)
+		return
+	}
+	_, err = app.models.Users.GetByID(userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.invalidCredentialsResponse(w, r)
+		default:
+			app.serverErrorLogResponse(w, r, err)
+		}
+		return
+	}
+	// Blacklist the refresh token.
+	err = app.auth.BlacklistToken.BlacklistToken(refreshClaims.ID)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+	// Blacklist the access token.
+	err = app.auth.BlacklistToken.BlacklistToken(accessClaims.ID)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "Successful logout."}, nil)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
 		return

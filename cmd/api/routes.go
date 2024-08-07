@@ -25,6 +25,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("POST /v1/token", app.loginHandler)
 	mux.HandleFunc("POST /v1/token/refresh", app.refreshHandler)
 	mux.HandleFunc("POST /v1/token/blacklist", app.blacklistHandler)
+	mux.HandleFunc("POST /v1/token/logout", app.logoutHandler)
 
 	mux.HandleFunc("GET /v1/swaps", app.requireActivatedUser(app.listSwapsHandler))
 	mux.HandleFunc("POST /v1/swaps", app.requireActivatedUser(app.createSwapHandler))

@@ -190,6 +190,26 @@ func (app *application) requireActivatedUser(next http.HandlerFunc) http.Handler
 	return app.requireAuthenticatedUser(fn)
 }
 
+// requireMatchingUserIDs middleware checks whether the authenticated user's is matches to the id specified in the url path.
+func (app *application) requireMatchingUserIDs(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		user := app.contextGetUser(r)
+		userID, err := app.extractIDParam(r)
+		if err != nil {
+			app.serverErrorLogResponse(w, r, err)
+			return
+		}
+
+		if user.ID != userID {
+			app.invalidCredentialsResponse(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (app *application) enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Vary", "Access-Control-Request-Method")

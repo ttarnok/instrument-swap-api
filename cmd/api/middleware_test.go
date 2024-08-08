@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"io"
+	"log"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -492,6 +494,81 @@ func TestRequireActivatedUser(t *testing.T) {
 			if tc.expectedStatusCode != recRes.StatusCode {
 				t.Errorf(`Expected status code %d, got %d`, tc.expectedStatusCode, recRes.StatusCode)
 			}
+		})
+	}
+}
+
+// TestRequireMatchingUserIDs unti tests requireMatchingUserIDs middleware.
+func TestRequireMatchingUserIDs(t *testing.T) {
+	type testCase struct {
+		name               string
+		userID             int64
+		user               *data.User
+		expectedStatusCode int
+	}
+
+	testCases := []testCase{
+		{
+			name:               "happy path",
+			userID:             1,
+			user:               &data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name:               "not matching ids",
+			userID:             2,
+			user:               &data.User{ID: 4, Name: "Test User", Email: "testuser@example.com"},
+			expectedStatusCode: http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			app := &application{
+				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+			}
+
+			// using closure to leverage tc.user
+			before := func(next http.HandlerFunc) http.HandlerFunc {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					r = app.contextSetUser(r, tc.user)
+
+					next.ServeHTTP(w, r)
+				})
+			}
+
+			next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := w.Write([]byte("OK"))
+				if err != nil {
+					t.Fatal(err)
+				}
+			})
+
+			mux := http.NewServeMux()
+			mux.HandleFunc("POST /{id}", before(app.requireMatchingUserIDs(next)))
+
+			ts := httptest.NewServer(mux)
+			defer ts.Close()
+
+			path := fmt.Sprintf("%s/%d", ts.URL, tc.userID)
+
+			req, err := http.NewRequest("POST", path, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if tc.expectedStatusCode != resp.StatusCode {
+				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, resp.StatusCode)
+			}
+
 		})
 	}
 }

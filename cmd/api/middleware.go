@@ -30,6 +30,7 @@ func (app *application) recoverPanic(handler http.Handler) http.Handler {
 	})
 }
 
+// rateLimit middleware provides rate limiting functionalities.
 func (app *application) rateLimit(next http.Handler) http.Handler {
 
 	type client struct {
@@ -111,13 +112,26 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 
 		token := headerParts[1]
 
+		// Check whether the claims are valid and parse them.
 		claims, err := app.auth.AccessToken.ParseClaims([]byte(token))
 		if err != nil {
 			app.invalidAuthenticationTokenResponse(w, r)
 			return
 		}
 
+		// Check whether the token is expired.
 		if !app.auth.AccessToken.IsValid([]byte(token)) {
+			app.invalidAuthenticationTokenResponse(w, r)
+			return
+		}
+
+		// Check whether the token is blacklisted.
+		isBlacklisted, err := app.auth.BlacklistToken.IsTokenBlacklisted(claims.ID)
+		if err != nil {
+			app.serverErrorLogResponse(w, r, err)
+			return
+		}
+		if isBlacklisted {
 			app.invalidAuthenticationTokenResponse(w, r)
 			return
 		}

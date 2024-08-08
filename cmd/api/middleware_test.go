@@ -206,8 +206,10 @@ func TestAuthenticate(t *testing.T) {
 
 	testSecret := "secret"
 
+	validJWTBytesTokenID := uuid.NewString()
+
 	var claims jwt.Claims
-	claims.ID = uuid.NewString()
+	claims.ID = validJWTBytesTokenID
 	claims.Subject = strconv.FormatInt(1, 10)
 	claims.Issued = jwt.NewNumericTime(time.Now())
 	claims.NotBefore = jwt.NewNumericTime(time.Now())
@@ -221,6 +223,7 @@ func TestAuthenticate(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	claims.ID = uuid.NewString()
 	claims.Subject = strconv.FormatInt(1, 10)
 	claims.Issued = jwt.NewNumericTime(time.Now().Add(-48 * time.Hour))
 	claims.NotBefore = jwt.NewNumericTime(time.Now().Add(-48 * time.Hour))
@@ -234,6 +237,7 @@ func TestAuthenticate(t *testing.T) {
 	}
 
 	claims.Subject = "non number"
+	uuid.NewString()
 	claims.Issued = jwt.NewNumericTime(time.Now())
 	claims.NotBefore = jwt.NewNumericTime(time.Now())
 	claims.Expires = jwt.NewNumericTime(time.Now().Add(24 * time.Hour))
@@ -250,6 +254,7 @@ func TestAuthenticate(t *testing.T) {
 		token              string
 		expectedStatusCode int
 		expectedUser       *data.User
+		blacklist          []string
 	}
 
 	testCases := []testCase{
@@ -258,48 +263,63 @@ func TestAuthenticate(t *testing.T) {
 			token:              "Bearer " + string(validJWTBytes),
 			expectedStatusCode: http.StatusOK,
 			expectedUser:       &data.User{ID: 1, Name: "Test User"},
+			blacklist:          nil,
 		},
 		{
 			name:               "without token",
 			token:              "",
 			expectedStatusCode: http.StatusOK,
 			expectedUser:       data.AnonymousUser,
+			blacklist:          nil,
 		},
 		{
 			name:               "broken token value",
 			token:              "asfsgqweg",
 			expectedStatusCode: http.StatusUnauthorized,
 			expectedUser:       data.AnonymousUser,
+			blacklist:          nil,
 		},
 		{
 			name:               "broken bearer token value",
 			token:              "Bearer asfsgqweg",
 			expectedStatusCode: http.StatusUnauthorized,
 			expectedUser:       data.AnonymousUser,
+			blacklist:          nil,
 		},
 		{
 			name:               "invalid token",
 			token:              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
 			expectedStatusCode: http.StatusUnauthorized,
 			expectedUser:       data.AnonymousUser,
+			blacklist:          nil,
 		},
 		{
 			name:               "expired token",
 			token:              "Bearer " + string(expiredJWTBytes),
 			expectedStatusCode: http.StatusUnauthorized,
 			expectedUser:       data.AnonymousUser,
+			blacklist:          nil,
 		},
 		{
 			name:               "nun numeric subject",
 			token:              "Bearer " + string(nonNumbericSubJWTBytes),
 			expectedStatusCode: http.StatusInternalServerError,
 			expectedUser:       data.AnonymousUser,
+			blacklist:          nil,
 		},
 		{
 			name:               "non existent user",
 			token:              "Bearer " + string(validJWTBytes),
 			expectedStatusCode: http.StatusUnauthorized,
 			expectedUser:       &data.User{ID: 2},
+			blacklist:          nil,
+		},
+		{
+			name:               "blacklisted token",
+			token:              "Bearer " + string(validJWTBytes),
+			expectedStatusCode: http.StatusUnauthorized,
+			expectedUser:       &data.User{ID: 1, Name: "Test User"},
+			blacklist:          []string{validJWTBytesTokenID},
 		},
 	}
 
@@ -312,7 +332,7 @@ func TestAuthenticate(t *testing.T) {
 					models: data.Models{
 						Users: mocks.NewEmptyUserModelMock(),
 					},
-					auth:   auth.NewAuth(testSecret, mocks.NewBlacklistServiceMock()),
+					auth:   auth.NewAuth(testSecret, mocks.NewBlacklistServiceMockWithData(tc.blacklist)),
 					logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 				}
 			} else {
@@ -320,7 +340,7 @@ func TestAuthenticate(t *testing.T) {
 					models: data.Models{
 						Users: mocks.NewUserModelMock([]*data.User{tc.expectedUser}),
 					},
-					auth:   auth.NewAuth(testSecret, mocks.NewBlacklistServiceMock()),
+					auth:   auth.NewAuth(testSecret, mocks.NewBlacklistServiceMockWithData(tc.blacklist)),
 					logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 				}
 			}

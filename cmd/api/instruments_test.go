@@ -248,12 +248,12 @@ func TestCreateInstrumentHandler(t *testing.T) {
 		Condition       string   `json:"condition"`
 		Description     string   `json:"description"`
 		FamousOwners    []string `json:"famous_owners"`
-		OwnerUserID     int64    `json:"owner_user_id"`
 	}
 
 	type testCase struct {
 		name                   string
 		input                  inputInstrument
+		ownerUser              data.User
 		expectedStatusCode     int
 		expectedLocationHeader string
 		checkResult            bool
@@ -273,8 +273,9 @@ func TestCreateInstrumentHandler(t *testing.T) {
 				Condition:       "used",
 				Description:     "A music workstation manufactured by Korg.",
 				FamousOwners:    []string{"The Orb"},
-				OwnerUserID:     1,
+				// OwnerUserID:     1,
 			},
+			ownerUser:              data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			expectedStatusCode:     http.StatusCreated,
 			expectedLocationHeader: "/v1/instrumets/0",
 			checkResult:            true,
@@ -305,32 +306,14 @@ func TestCreateInstrumentHandler(t *testing.T) {
 				Condition:       "used",
 				Description:     "A music workstation manufactured by Korg.",
 				FamousOwners:    []string{"The Orb"},
-				OwnerUserID:     1,
+				// OwnerUserID:     1,
 			},
+			ownerUser:              data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			expectedStatusCode:     http.StatusUnprocessableEntity,
 			expectedLocationHeader: "",
 			checkResult:            true,
 			expectedResult:         nil,
 			expectedErrResult:      map[string]string{"name": "must be provided"},
-		},
-		{
-			name: "non existent owner user id",
-			input: inputInstrument{
-				Name:            "M1",
-				Manufacturer:    "Korg",
-				ManufactureYear: 1990,
-				Type:            "synthesizer",
-				EstimatedValue:  100000,
-				Condition:       "used",
-				Description:     "A music workstation manufactured by Korg.",
-				FamousOwners:    []string{"The Orb"},
-				OwnerUserID:     100,
-			},
-			expectedStatusCode:     http.StatusUnprocessableEntity,
-			expectedLocationHeader: "",
-			checkResult:            true,
-			expectedResult:         nil,
-			expectedErrResult:      map[string]string{"owner_user_id": "user does not exist"},
 		},
 	}
 
@@ -340,11 +323,19 @@ func TestCreateInstrumentHandler(t *testing.T) {
 			app := &application{
 				models: data.Models{
 					Instruments: mocks.NewNonEmptyInstrumentModelMock(testDataEmpty),
-					Users:       mocks.NewEmptyUserModelMock(),
 				},
 			}
 
-			ts := httptest.NewServer(http.HandlerFunc(app.createInstrumentHandler))
+			setUser := func(next http.HandlerFunc) http.HandlerFunc {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+					r = app.contextSetUser(r, &tc.ownerUser)
+
+					next.ServeHTTP(w, r)
+				})
+			}
+
+			ts := httptest.NewServer(setUser(http.HandlerFunc(app.createInstrumentHandler)))
 			defer ts.Close()
 
 			bsInput, err := json.Marshal(tc.input)

@@ -90,6 +90,8 @@ func (app *application) showInstrumentHandler(w http.ResponseWriter, r *http.Req
 // createInstrumentHandler creates a new instrument.
 func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.Request) {
 
+	user := app.contextGetUser(r)
+
 	var input struct {
 		Name            string   `json:"name"`
 		Manufacturer    string   `json:"manufacturer"`
@@ -99,7 +101,7 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 		Condition       string   `json:"condition"`
 		Description     string   `json:"description"`
 		FamousOwners    []string `json:"famous_owners"`
-		OwnerUserID     int64    `json:"owner_user_id"`
+		// OwnerUserID     int64    `json:"owner_user_id"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -117,7 +119,7 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 		Condition:       input.Condition,
 		Description:     input.Description,
 		FamousOwners:    input.FamousOwners,
-		OwnerUserID:     input.OwnerUserID,
+		OwnerUserID:     user.ID,
 	}
 
 	v := validator.New()
@@ -125,19 +127,6 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 	if data.ValidateInstrument(v, instrument); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
-	}
-
-	_, err = app.models.Users.GetByID(input.OwnerUserID)
-	if err != nil {
-		switch {
-		case errors.Is(err, data.ErrRecordNotFound):
-			v.AddError("owner_user_id", "user does not exist")
-			app.failedValidationResponse(w, r, v.Errors)
-			return
-		default:
-			app.serverErrorLogResponse(w, r, err)
-			return
-		}
 	}
 
 	err = app.models.Instruments.Insert(instrument)

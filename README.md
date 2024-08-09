@@ -9,6 +9,8 @@ that provides functionality for musicians to swap each other's instruments.
 
 ## Setup
 
+Development expects to run in a Unix-like system.
+
 ## Usage
 
 - [X] GET    /v1/users // Show detailed list of users

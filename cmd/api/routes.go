@@ -10,12 +10,6 @@ func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /v1/liveliness", app.livelinessHandler)
 
-	mux.HandleFunc("GET /v1/instruments", app.requireActivatedUser(app.listInstrumentsHandler))
-	mux.HandleFunc("GET /v1/instruments/{id}", app.requireActivatedUser(app.showInstrumentHandler))
-	mux.HandleFunc("POST /v1/instruments", app.requireActivatedUser(app.createInstrumentHandler))
-	mux.HandleFunc("PATCH /v1/instruments/{id}", app.requireActivatedUser(app.updateInstrumentHandler))
-	mux.HandleFunc("DELETE /v1/instruments/{id}", app.requireActivatedUser(app.deleteInstrumentHandler))
-
 	mux.HandleFunc("GET /v1/users", app.listUsersHandler)
 	mux.HandleFunc("POST /v1/users", app.registerUserHandler)
 	mux.HandleFunc("PUT /v1/users/{id}/password", app.requireMatchingUserIDs(app.updatePasswordHandler))
@@ -26,6 +20,12 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("POST /v1/token/refresh", app.refreshHandler)
 	mux.HandleFunc("POST /v1/token/blacklist", app.blacklistHandler)
 	mux.HandleFunc("POST /v1/token/logout", app.logoutHandler)
+
+	mux.HandleFunc("GET /v1/instruments", app.requireActivatedUser(app.listInstrumentsHandler))
+	mux.HandleFunc("GET /v1/instruments/{id}", app.requireActivatedUser(app.showInstrumentHandler))
+	mux.HandleFunc("POST /v1/instruments", app.requireActivatedUser(app.createInstrumentHandler))
+	mux.HandleFunc("PATCH /v1/instruments/{id}", app.requireActivatedUser(app.updateInstrumentHandler))
+	mux.HandleFunc("DELETE /v1/instruments/{id}", app.requireActivatedUser(app.deleteInstrumentHandler))
 
 	mux.HandleFunc("GET /v1/swaps", app.requireActivatedUser(app.listSwapsHandler))
 	mux.HandleFunc("POST /v1/swaps", app.requireActivatedUser(app.createSwapHandler))

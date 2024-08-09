@@ -60,6 +60,8 @@ func (app *application) showSwapHandler(w http.ResponseWriter, r *http.Request) 
 // createSwapHandler handles the creation of a new swap with the given instruments.
 func (app *application) createSwapHandler(w http.ResponseWriter, r *http.Request) {
 
+	ownerUser := app.contextGetUser(r)
+
 	var input struct {
 		RequesterInstrumentID int64 `json:"requester_instrument_id"`
 		RecipientInstrumentID int64 `json:"recipient_instrument_id"`
@@ -94,7 +96,8 @@ func (app *application) createSwapHandler(w http.ResponseWriter, r *http.Request
 		}
 		return
 	}
-	_, err = app.models.Instruments.Get(input.RequesterInstrumentID)
+
+	requesterInstrument, err := app.models.Instruments.Get(input.RequesterInstrumentID)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
@@ -102,6 +105,12 @@ func (app *application) createSwapHandler(w http.ResponseWriter, r *http.Request
 		default:
 			app.serverErrorLogResponse(w, r, err)
 		}
+		return
+	}
+
+	// Only the authenticated user can be the requester.
+	if requesterInstrument.OwnerUserID != ownerUser.ID {
+		app.forbiddenResponse(w, r)
 		return
 	}
 

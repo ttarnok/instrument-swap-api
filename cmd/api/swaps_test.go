@@ -272,6 +272,7 @@ func TestCreateSwapHandler(t *testing.T) {
 	type testCase struct {
 		name               string
 		input              inputSwap
+		reqUser            data.User
 		instruments        []*data.Instrument
 		expectedStatusCode int
 		shouldCheckBody    bool
@@ -315,9 +316,21 @@ func TestCreateSwapHandler(t *testing.T) {
 				RequesterInstrumentID: 1,
 				RecipientInstrumentID: 2,
 			},
+			reqUser:            data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			instruments:        testInstruments,
 			expectedStatusCode: http.StatusCreated,
 			shouldCheckBody:    true,
+		},
+		{
+			name: "create a swap for another user",
+			input: inputSwap{
+				RequesterInstrumentID: 1,
+				RecipientInstrumentID: 2,
+			},
+			reqUser:            data.User{ID: 3, Name: "Test User", Email: "testuser@example.com"},
+			instruments:        testInstruments,
+			expectedStatusCode: http.StatusForbidden,
+			shouldCheckBody:    false,
 		},
 		{
 			name: "non existent RequesterInstrumentID",
@@ -325,6 +338,7 @@ func TestCreateSwapHandler(t *testing.T) {
 				RequesterInstrumentID: 10,
 				RecipientInstrumentID: 2,
 			},
+			reqUser:            data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			instruments:        testInstruments,
 			expectedStatusCode: http.StatusBadRequest,
 			shouldCheckBody:    false,
@@ -335,6 +349,7 @@ func TestCreateSwapHandler(t *testing.T) {
 				RequesterInstrumentID: 1,
 				RecipientInstrumentID: 20,
 			},
+			reqUser:            data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			instruments:        testInstruments,
 			expectedStatusCode: http.StatusBadRequest,
 			shouldCheckBody:    false,
@@ -345,6 +360,7 @@ func TestCreateSwapHandler(t *testing.T) {
 				RequesterInstrumentID: 1,
 				RecipientInstrumentID: -2,
 			},
+			reqUser:            data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			instruments:        testInstruments,
 			expectedStatusCode: http.StatusUnprocessableEntity,
 			shouldCheckBody:    false,
@@ -362,8 +378,17 @@ func TestCreateSwapHandler(t *testing.T) {
 				},
 			}
 
+			setUser := func(next http.HandlerFunc) http.HandlerFunc {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+					r = app.contextSetUser(r, &tc.reqUser)
+
+					next.ServeHTTP(w, r)
+				})
+			}
+
 			mux := http.NewServeMux()
-			mux.HandleFunc("POST /", app.createSwapHandler)
+			mux.HandleFunc("POST /", setUser(app.createSwapHandler))
 
 			ts := httptest.NewServer(mux)
 			defer ts.Close()

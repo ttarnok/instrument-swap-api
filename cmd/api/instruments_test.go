@@ -634,6 +634,8 @@ func TestDeleteInstrumentHandler(t *testing.T) {
 
 	type testCase struct {
 		name               string
+		dabatase           []*data.Instrument
+		ownerUser          data.User
 		pathParam          string
 		expectedStatusCode int
 		expectedResult     map[string]string
@@ -641,22 +643,88 @@ func TestDeleteInstrumentHandler(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:               "happy path",
+			name: "happy path",
+			dabatase: []*data.Instrument{{
+				ID:              1,
+				CreatedAt:       time.Now().UTC(),
+				Name:            "M1",
+				Manufacturer:    "Korg",
+				ManufactureYear: 1990,
+				Type:            "synthesizer",
+				EstimatedValue:  100000,
+				Condition:       "used",
+				Description:     "A music workstation manufactured by Korg.",
+				FamousOwners:    []string{"The Orb"},
+				OwnerUserID:     1,
+				Version:         1,
+			}},
+			ownerUser:          data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			pathParam:          "1",
 			expectedStatusCode: http.StatusOK,
 			expectedResult:     map[string]string{"message": "instrument successfully deleted"},
 		},
 		{
-			name:               "non existent id",
+			name: "non existent id",
+			dabatase: []*data.Instrument{{
+				ID:              1,
+				CreatedAt:       time.Now().UTC(),
+				Name:            "M1",
+				Manufacturer:    "Korg",
+				ManufactureYear: 1990,
+				Type:            "synthesizer",
+				EstimatedValue:  100000,
+				Condition:       "used",
+				Description:     "A music workstation manufactured by Korg.",
+				FamousOwners:    []string{"The Orb"},
+				OwnerUserID:     1,
+				Version:         1,
+			}},
+			ownerUser:          data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			pathParam:          "1000",
 			expectedStatusCode: http.StatusNotFound,
 			expectedResult:     map[string]string{"error": "the requested resource could not be found"},
 		},
 		{
-			name:               "delete swapped instrument",
+			name: "delete swapped instrument",
+			dabatase: []*data.Instrument{{
+				ID:              999,
+				CreatedAt:       time.Now().UTC(),
+				Name:            "M1",
+				Manufacturer:    "Korg",
+				ManufactureYear: 1990,
+				Type:            "synthesizer",
+				EstimatedValue:  100000,
+				Condition:       "used",
+				Description:     "A music workstation manufactured by Korg.",
+				FamousOwners:    []string{"The Orb"},
+				OwnerUserID:     1,
+				Version:         1,
+			}},
+			ownerUser:          data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			pathParam:          "999",
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResult:     map[string]string{"error": "can not perform the operation on a swapped instrument"},
+		},
+		{
+			name: "delete an instrument owned by an other user",
+			dabatase: []*data.Instrument{{
+				ID:              1,
+				CreatedAt:       time.Now().UTC(),
+				Name:            "M1",
+				Manufacturer:    "Korg",
+				ManufactureYear: 1990,
+				Type:            "synthesizer",
+				EstimatedValue:  100000,
+				Condition:       "used",
+				Description:     "A music workstation manufactured by Korg.",
+				FamousOwners:    []string{"The Orb"},
+				OwnerUserID:     2,
+				Version:         1,
+			}},
+			ownerUser:          data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
+			pathParam:          "1",
+			expectedStatusCode: http.StatusForbidden,
+			expectedResult:     map[string]string{"error": "Forbidden"},
 		},
 	}
 
@@ -665,11 +733,20 @@ func TestDeleteInstrumentHandler(t *testing.T) {
 
 			app := &application{
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
-				models: data.Models{Instruments: mocks.NewNonEmptyInstrumentModelMock(testData)},
+				models: data.Models{Instruments: mocks.NewNonEmptyInstrumentModelMock(tc.dabatase)},
+			}
+
+			setUser := func(next http.HandlerFunc) http.HandlerFunc {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+					r = app.contextSetUser(r, &tc.ownerUser)
+
+					next.ServeHTTP(w, r)
+				})
 			}
 
 			mux := http.NewServeMux()
-			mux.HandleFunc("POST /{id}", app.deleteInstrumentHandler)
+			mux.HandleFunc("POST /{id}", setUser(app.deleteInstrumentHandler))
 
 			ts := httptest.NewServer(mux)
 			defer ts.Close()

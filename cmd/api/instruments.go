@@ -247,9 +247,27 @@ func (app *application) updateInstrumentHandler(w http.ResponseWriter, r *http.R
 // deleteInstrumentHandler deletes an instrument.
 func (app *application) deleteInstrumentHandler(w http.ResponseWriter, r *http.Request) {
 
+	ownerUser := app.contextGetUser(r)
+
 	id, err := app.extractIDParam(r)
 	if err != nil {
 		app.notFoundResponse(w, r)
+		return
+	}
+
+	instrument, err := app.models.Instruments.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorLogResponse(w, r, err)
+		}
+		return
+	}
+
+	if ownerUser.ID != instrument.OwnerUserID {
+		app.forbiddenResponse(w, r)
 		return
 	}
 

@@ -152,6 +152,7 @@ func TestShowSwapHandler(t *testing.T) {
 		pathParam          string
 		shouldCheckBody    bool
 		baseSwaps          []*data.Swap
+		user               data.User
 		expectedStatusCode int
 		expectedTestSwap   *data.Swap
 	}
@@ -162,6 +163,7 @@ func TestShowSwapHandler(t *testing.T) {
 			pathParam:          "1",
 			shouldCheckBody:    true,
 			baseSwaps:          testSwaps,
+			user:               data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			expectedStatusCode: http.StatusOK,
 			expectedTestSwap:   testSwaps[0],
 		},
@@ -170,14 +172,25 @@ func TestShowSwapHandler(t *testing.T) {
 			pathParam:          "non numberic",
 			shouldCheckBody:    false,
 			baseSwaps:          nil,
+			user:               data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			expectedStatusCode: http.StatusNotFound,
 			expectedTestSwap:   nil,
 		},
 		{
-			name:               "non existent user id",
+			name:               "non existent swap id",
 			pathParam:          "99",
 			shouldCheckBody:    false,
-			baseSwaps:          nil,
+			baseSwaps:          testSwaps,
+			user:               data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
+			expectedStatusCode: http.StatusNotFound,
+			expectedTestSwap:   nil,
+		},
+		{
+			name:               "show swap for a different user",
+			pathParam:          "1",
+			shouldCheckBody:    false,
+			baseSwaps:          []*data.Swap{},
+			user:               data.User{ID: 12, Name: "Test User", Email: "testuser@example.com"},
 			expectedStatusCode: http.StatusNotFound,
 			expectedTestSwap:   nil,
 		},
@@ -191,8 +204,17 @@ func TestShowSwapHandler(t *testing.T) {
 				models: data.Models{Swaps: mocks.NewSwapModelMock(tc.baseSwaps)},
 			}
 
+			setUser := func(next http.HandlerFunc) http.HandlerFunc {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+					r = app.contextSetUser(r, &tc.user)
+
+					next.ServeHTTP(w, r)
+				})
+			}
+
 			mux := http.NewServeMux()
-			mux.HandleFunc("GET /{id}", app.showSwapHandler)
+			mux.HandleFunc("GET /{id}", setUser(app.showSwapHandler))
 
 			ts := httptest.NewServer(mux)
 			defer ts.Close()

@@ -28,8 +28,10 @@ func (app *application) listSwapsHandler(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// showSwapHandler handles the retrieval of a swap with the given id.
+// showSwapHandler handles the retrieval of a swap with the given id for the user within the context.
 func (app *application) showSwapHandler(w http.ResponseWriter, r *http.Request) {
+
+	authUser := app.contextGetUser(r)
 
 	id, err := app.extractIDParam(r)
 	if err != nil {
@@ -37,19 +39,26 @@ func (app *application) showSwapHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	swap, err := app.models.Swaps.Get(id)
+	swapsForUser, err := app.models.Swaps.GetAllForUser(authUser.ID)
 	if err != nil {
-		switch {
-		case errors.Is(err, data.ErrRecordNotFound):
-			app.notFoundResponse(w, r)
-			return
-		default:
-			app.serverErrorLogResponse(w, r, err)
-			return
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+	var foundSwap *data.Swap
+	for _, swap := range swapsForUser {
+		if swap.ID == id {
+			foundSwap = swap
+			break
 		}
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"swap": swap}, nil)
+	if foundSwap == nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"swap": foundSwap}, nil)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
 		return

@@ -488,104 +488,191 @@ func TestCreateSwapHandler(t *testing.T) {
 
 }
 
-// TestAcceptSwapHandler implements unit tests for acceptSwapHandler.
-func TestAcceptSwapHandler(t *testing.T) {
+// TestUpdateSwapStatusHandler implements unit tests for updateSwapStatusHandler.
+func TestUpdateSwapStatusHandler(t *testing.T) {
+
+	type inputBodyType struct {
+		Status string `json:"status"`
+	}
 
 	type testCase struct {
 		name               string
+		inputBody          inputBodyType
 		pathParam          string
-		swap               []*data.Swap
+		swap               data.Swap
+		instrumentReq      data.Instrument
+		instrumentRec      data.Instrument
+		reqUser            data.User
 		expectedStatusCode int
-		shouldCheckBody    bool
 	}
 
 	testCases := []testCase{
 		{
-			name:      "happy path",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    1,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
+			name: "happy path - accept",
+			inputBody: inputBodyType{
+				Status: "accepted",
+			},
+			pathParam:          "99",
+			swap:               data.Swap{ID: 99, RequesterInstrumentID: 1, RecipientInstrumentID: 2},
+			instrumentReq:      data.Instrument{ID: 1, OwnerUserID: 10},
+			instrumentRec:      data.Instrument{ID: 2, OwnerUserID: 20},
+			reqUser:            data.User{ID: 20, Name: "Test User", Email: "testuser@example.com"},
 			expectedStatusCode: http.StatusOK,
-			shouldCheckBody:    true,
 		},
 		{
-			name:      "non exisitent swap id",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    2,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
+			name: "happy path - reject",
+			inputBody: inputBodyType{
+				Status: "rejected",
+			},
+			pathParam:          "99",
+			swap:               data.Swap{ID: 99, RequesterInstrumentID: 1, RecipientInstrumentID: 2},
+			instrumentReq:      data.Instrument{ID: 1, OwnerUserID: 10},
+			instrumentRec:      data.Instrument{ID: 2, OwnerUserID: 20},
+			reqUser:            data.User{ID: 20, Name: "Test User", Email: "testuser@example.com"},
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name: "happy path - end",
+			inputBody: inputBodyType{
+				Status: "ended",
+			},
+			pathParam:          "99",
+			swap:               data.Swap{ID: 99, RequesterInstrumentID: 1, RecipientInstrumentID: 2},
+			instrumentReq:      data.Instrument{ID: 1, OwnerUserID: 10},
+			instrumentRec:      data.Instrument{ID: 2, OwnerUserID: 20},
+			reqUser:            data.User{ID: 20, Name: "Test User", Email: "testuser@example.com"},
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name: "invalid status param",
+			inputBody: inputBodyType{
+				Status: "invalid",
+			},
+			pathParam:          "99",
+			swap:               data.Swap{ID: 99, RequesterInstrumentID: 1, RecipientInstrumentID: 2},
+			instrumentReq:      data.Instrument{ID: 1, OwnerUserID: 10},
+			instrumentRec:      data.Instrument{ID: 2, OwnerUserID: 20},
+			reqUser:            data.User{ID: 20, Name: "Test User", Email: "testuser@example.com"},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "non valid path param",
+			inputBody: inputBodyType{
+				Status: "ended",
+			},
+			pathParam:          "nonvalid",
+			swap:               data.Swap{ID: 99, RequesterInstrumentID: 1, RecipientInstrumentID: 2},
+			instrumentReq:      data.Instrument{ID: 1, OwnerUserID: 10},
+			instrumentRec:      data.Instrument{ID: 2, OwnerUserID: 20},
+			reqUser:            data.User{ID: 20, Name: "Test User", Email: "testuser@example.com"},
 			expectedStatusCode: http.StatusNotFound,
-			shouldCheckBody:    false,
 		},
 		{
-			name:      "swap with accepted state",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    1,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				IsAccepted:            true,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
-			expectedStatusCode: http.StatusBadRequest,
-			shouldCheckBody:    false,
+			name: "non existing swap",
+			inputBody: inputBodyType{
+				Status: "ended",
+			},
+			pathParam:          "999",
+			swap:               data.Swap{ID: 99, RequesterInstrumentID: 1, RecipientInstrumentID: 2},
+			instrumentReq:      data.Instrument{ID: 1, OwnerUserID: 10},
+			instrumentRec:      data.Instrument{ID: 2, OwnerUserID: 20},
+			reqUser:            data.User{ID: 20, Name: "Test User", Email: "testuser@example.com"},
+			expectedStatusCode: http.StatusNotFound,
 		},
 		{
-			name:      "swap with rejected state",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    1,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				IsRejected:            true,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
+			name: "non valid status change",
+			inputBody: inputBodyType{
+				Status: "rejected",
+			},
+			pathParam:          "99",
+			swap:               data.Swap{ID: 99, RequesterInstrumentID: 1, RecipientInstrumentID: 2, IsAccepted: true},
+			instrumentReq:      data.Instrument{ID: 1, OwnerUserID: 10},
+			instrumentRec:      data.Instrument{ID: 2, OwnerUserID: 20},
+			reqUser:            data.User{ID: 20, Name: "Test User", Email: "testuser@example.com"},
 			expectedStatusCode: http.StatusBadRequest,
-			shouldCheckBody:    false,
 		},
 		{
-			name:      "swap with ended state",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    1,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				IsEnded:               true,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
+			name: "non existent instrumentReq",
+			inputBody: inputBodyType{
+				Status: "accepted",
+			},
+			pathParam:          "99",
+			swap:               data.Swap{ID: 99, RequesterInstrumentID: 1, RecipientInstrumentID: 2},
+			instrumentReq:      data.Instrument{ID: 199, OwnerUserID: 10},
+			instrumentRec:      data.Instrument{ID: 2, OwnerUserID: 20},
+			reqUser:            data.User{ID: 20, Name: "Test User", Email: "testuser@example.com"},
 			expectedStatusCode: http.StatusBadRequest,
-			shouldCheckBody:    false,
+		},
+		{
+			name: "non existent instrumentRec",
+			inputBody: inputBodyType{
+				Status: "accepted",
+			},
+			pathParam:          "99",
+			swap:               data.Swap{ID: 99, RequesterInstrumentID: 1, RecipientInstrumentID: 2},
+			instrumentReq:      data.Instrument{ID: 1, OwnerUserID: 10},
+			instrumentRec:      data.Instrument{ID: 299, OwnerUserID: 20},
+			reqUser:            data.User{ID: 20, Name: "Test User", Email: "testuser@example.com"},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "non valid recipient",
+			inputBody: inputBodyType{
+				Status: "accepted",
+			},
+			pathParam:          "99",
+			swap:               data.Swap{ID: 99, RequesterInstrumentID: 1, RecipientInstrumentID: 2},
+			instrumentReq:      data.Instrument{ID: 1, OwnerUserID: 10},
+			instrumentRec:      data.Instrument{ID: 2, OwnerUserID: 200},
+			reqUser:            data.User{ID: 20, Name: "Test User", Email: "testuser@example.com"},
+			expectedStatusCode: http.StatusForbidden,
+		},
+		{
+			name: "non valid recipient2",
+			inputBody: inputBodyType{
+				Status: "rejected",
+			},
+			pathParam:          "99",
+			swap:               data.Swap{ID: 99, RequesterInstrumentID: 1, RecipientInstrumentID: 2},
+			instrumentReq:      data.Instrument{ID: 1, OwnerUserID: 10},
+			instrumentRec:      data.Instrument{ID: 2, OwnerUserID: 20},
+			reqUser:            data.User{ID: 10, Name: "Test User", Email: "testuser@example.com"},
+			expectedStatusCode: http.StatusForbidden,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			app := &application{
 				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
-				models: data.Models{Swaps: mocks.NewSwapModelMock(tc.swap)},
+				models: data.Models{Swaps: mocks.NewSwapModelMock([]*data.Swap{&tc.swap}), Instruments: mocks.NewNonEmptyInstrumentModelMock([]*data.Instrument{&tc.instrumentRec, &tc.instrumentReq})},
+			}
+
+			setUser := func(next http.HandlerFunc) http.HandlerFunc {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+					r = app.contextSetUser(r, &tc.reqUser)
+
+					next.ServeHTTP(w, r)
+				})
 			}
 
 			mux := http.NewServeMux()
-			mux.HandleFunc("POST /{id}", app.acceptSwapHandler)
+			mux.HandleFunc("POST /{id}", setUser(app.updateSwapStatusHandler))
 
 			ts := httptest.NewServer(mux)
 			defer ts.Close()
 
 			path := fmt.Sprintf("%s/%s", ts.URL, tc.pathParam)
 
-			req, err := http.NewRequest("POST", path, nil)
+			bs, err := json.Marshal(tc.inputBody)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			req, err := http.NewRequest("POST", path, bytes.NewBuffer(bs))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -599,372 +686,7 @@ func TestAcceptSwapHandler(t *testing.T) {
 			if tc.expectedStatusCode != resp.StatusCode {
 				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, resp.StatusCode)
 			}
-
-			if tc.shouldCheckBody {
-
-				defer func() {
-					err := resp.Body.Close()
-					if err != nil {
-						t.Fatal(err)
-					}
-				}()
-
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				respEnvelope := make(envelope)
-
-				err = json.Unmarshal(body, &respEnvelope)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				respAnySlice, ok := respEnvelope["swap"]
-				if !ok {
-					t.Fatal(`the response does not contain enveloped swaps`)
-				}
-				buf := new(bytes.Buffer)
-				err = json.NewEncoder(buf).Encode(respAnySlice)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				var swap *data.Swap
-
-				err = json.NewDecoder(buf).Decode(&swap)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if !swap.IsAccepted {
-					t.Error("output swap should be accepted")
-				}
-			}
-
 		})
 	}
 
-}
-
-// TestRejectSwapHandler implements unit tests for rejectSwapHandler.
-func TestRejectSwapHandler(t *testing.T) {
-
-	type testCase struct {
-		name               string
-		pathParam          string
-		swap               []*data.Swap
-		expectedStatusCode int
-		shouldCheckBody    bool
-	}
-
-	testCases := []testCase{
-		{
-			name:      "happy path",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    1,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
-			expectedStatusCode: http.StatusOK,
-			shouldCheckBody:    true,
-		},
-		{
-			name:      "non exisitent swap id",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    2,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
-			expectedStatusCode: http.StatusNotFound,
-			shouldCheckBody:    false,
-		},
-		{
-			name:      "swap with accepted state",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    1,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				IsAccepted:            true,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
-			expectedStatusCode: http.StatusBadRequest,
-			shouldCheckBody:    false,
-		},
-		{
-			name:      "swap with rejected state",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    1,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				IsRejected:            true,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
-			expectedStatusCode: http.StatusBadRequest,
-			shouldCheckBody:    false,
-		},
-		{
-			name:      "swap with ended state",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    1,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				IsEnded:               true,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
-			expectedStatusCode: http.StatusBadRequest,
-			shouldCheckBody:    false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			app := &application{
-				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
-				models: data.Models{Swaps: mocks.NewSwapModelMock(tc.swap)},
-			}
-
-			mux := http.NewServeMux()
-			mux.HandleFunc("POST /{id}", app.rejectSwapHandler)
-
-			ts := httptest.NewServer(mux)
-			defer ts.Close()
-
-			path := fmt.Sprintf("%s/%s", ts.URL, tc.pathParam)
-
-			req, err := http.NewRequest("POST", path, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			if tc.expectedStatusCode != resp.StatusCode {
-				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, resp.StatusCode)
-			}
-
-			if tc.shouldCheckBody {
-
-				defer func() {
-					err := resp.Body.Close()
-					if err != nil {
-						t.Fatal(err)
-					}
-				}()
-
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				respEnvelope := make(envelope)
-
-				err = json.Unmarshal(body, &respEnvelope)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				respAnySlice, ok := respEnvelope["swap"]
-				if !ok {
-					t.Fatal(`the response does not contain enveloped swaps`)
-				}
-				buf := new(bytes.Buffer)
-				err = json.NewEncoder(buf).Encode(respAnySlice)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				var swap *data.Swap
-
-				err = json.NewDecoder(buf).Decode(&swap)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if !swap.IsRejected {
-					t.Error("output swap should be rejected")
-				}
-				if !swap.IsEnded {
-					t.Error("output swap should be ended")
-				}
-			}
-
-		})
-	}
-}
-
-// TestEndSwapHandler implements unit tests for endSwapHandler.
-func TestEndSwapHandler(t *testing.T) {
-
-	type testCase struct {
-		name               string
-		pathParam          string
-		swap               []*data.Swap
-		expectedStatusCode int
-		shouldCheckBody    bool
-	}
-
-	testCases := []testCase{
-		{
-			name:      "happy path",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    1,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
-			expectedStatusCode: http.StatusOK,
-			shouldCheckBody:    true,
-		},
-		{
-			name:      "non exisitent swap id",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    2,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
-			expectedStatusCode: http.StatusNotFound,
-			shouldCheckBody:    false,
-		},
-		{
-			name:      "happy path - swap with accepted state",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    1,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				IsAccepted:            true,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
-			expectedStatusCode: http.StatusOK,
-			shouldCheckBody:    false,
-		},
-		{
-			name:      "happy path - swap with rejected state",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    1,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				IsRejected:            true,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
-			expectedStatusCode: http.StatusOK,
-			shouldCheckBody:    false,
-		},
-		{
-			name:      "happy path - swap with ended state",
-			pathParam: "1",
-			swap: []*data.Swap{{
-				ID:                    1,
-				CreatedAt:             time.Now().UTC(),
-				RequesterInstrumentID: 1,
-				IsEnded:               true,
-				RecipientInstrumentID: 2,
-				Version:               1,
-			}},
-			expectedStatusCode: http.StatusOK,
-			shouldCheckBody:    false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			app := &application{
-				logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
-				models: data.Models{Swaps: mocks.NewSwapModelMock(tc.swap)},
-			}
-
-			mux := http.NewServeMux()
-			mux.HandleFunc("POST /{id}", app.endSwapHandler)
-
-			ts := httptest.NewServer(mux)
-			defer ts.Close()
-
-			path := fmt.Sprintf("%s/%s", ts.URL, tc.pathParam)
-
-			req, err := http.NewRequest("POST", path, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			if tc.expectedStatusCode != resp.StatusCode {
-				t.Errorf(`expected status code %d, got %d`, tc.expectedStatusCode, resp.StatusCode)
-			}
-
-			if tc.shouldCheckBody {
-
-				defer func() {
-					err := resp.Body.Close()
-					if err != nil {
-						t.Fatal(err)
-					}
-				}()
-
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				respEnvelope := make(envelope)
-
-				err = json.Unmarshal(body, &respEnvelope)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				respAnySlice, ok := respEnvelope["swap"]
-				if !ok {
-					t.Fatal(`the response does not contain enveloped swaps`)
-				}
-				buf := new(bytes.Buffer)
-				err = json.NewEncoder(buf).Encode(respAnySlice)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				var swap *data.Swap
-
-				err = json.NewDecoder(buf).Decode(&swap)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				if !swap.IsEnded {
-					t.Error("output swap should be ended")
-				}
-			}
-
-		})
-	}
 }

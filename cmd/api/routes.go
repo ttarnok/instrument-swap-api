@@ -30,9 +30,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("GET /v1/swaps", app.requireActivatedUser(app.listSwapsHandler))
 	mux.HandleFunc("POST /v1/swaps", app.requireActivatedUser(app.createSwapHandler))
 	mux.HandleFunc("GET /v1/swaps/{id}", app.requireActivatedUser(app.showSwapHandler))
-	mux.HandleFunc("POST /v1/swaps/{id}/accept", app.requireActivatedUser(app.acceptSwapHandler))
-	mux.HandleFunc("POST /v1/swaps/{id}/reject", app.requireActivatedUser(app.rejectSwapHandler))
-	mux.HandleFunc("POST /v1/swaps/{id}/end", app.requireActivatedUser(app.endSwapHandler))
+	mux.HandleFunc("PATCH /v1/swaps/{id}", app.updateSwapStatusHandler)
 
 	mux.Handle("GET /debug/vars", expvar.Handler())
 

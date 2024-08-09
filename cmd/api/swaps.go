@@ -10,6 +10,12 @@ import (
 	"github.com/ttarnok/instrument-swap-api/internal/validator"
 )
 
+const (
+	StatusSwapAccepted = "accepted" // StatusSwapAccepted
+	StatusSwapRejected = "rejected" // StatusSwapRejected
+	StatusSwapEnded    = "ended"    // StatusSwapEnded
+)
+
 // listSwapsHandler handles listing all swaps for the user within the context.
 func (app *application) listSwapsHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -161,62 +167,84 @@ func (app *application) createSwapHandler(w http.ResponseWriter, r *http.Request
 
 }
 
-// acceptSwapHandler handles the acception of the given swap.
-func (app *application) acceptSwapHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := app.extractIDParam(r)
-	if err != nil {
-		app.notFoundResponse(w, r)
-		return
+// isValidInputSwapStatus checks whether the given status string is a uniform value that is accepted by the application.
+func isValidInputSwapStatus(status string) bool {
+	if status != StatusSwapAccepted && status != StatusSwapRejected && status != StatusSwapEnded {
+		return false
 	}
+	return true
+}
 
-	swap, err := app.models.Swaps.Get(id)
-	if err != nil {
-		switch {
-		case errors.Is(err, data.ErrRecordNotFound):
-			app.notFoundResponse(w, r)
-			return
-		default:
-			app.serverErrorLogResponse(w, r, err)
-			return
+// validateSwapStatusTransition checks whether the requested state transition is possible from the current state.
+// In case of any problem returns a corresponding error, otherwise returns nil.
+func validateSwapStatusTransition(currentIsAccepted, currentIsRejected, currentIsEnded bool, requestedSwapStatus string) error {
+	if requestedSwapStatus == StatusSwapRejected && (currentIsAccepted || currentIsRejected || currentIsEnded) {
+		return errors.New("swap is not rejectable")
+	}
+	if requestedSwapStatus == StatusSwapAccepted && (currentIsAccepted || currentIsRejected || currentIsEnded) {
+		return errors.New("swap is not acceptable")
+	}
+	return nil
+}
+
+// isValidSwapStatusTransitionUser validate whether the authorized user is permitted to perform the requested status transition.
+func isValidSwapStatusTransitionUser(requestedSwapStatus string, requesterUserID int64, recipientUserID int64, authUserID int64) bool {
+	if requestedSwapStatus == StatusSwapEnded {
+		if requesterUserID == authUserID || recipientUserID == authUserID {
+			return true
 		}
 	}
-
-	if swap.IsAccepted || swap.IsRejected || swap.IsEnded {
-		app.badRequestResponse(w, r, errors.New("swap is not acceptable"))
-		return
+	if requestedSwapStatus == StatusSwapAccepted || requestedSwapStatus == StatusSwapRejected {
+		if recipientUserID == authUserID {
+			return true
+		}
 	}
+	return false
+}
 
-	swap.IsAccepted = true
+// doSwapStatusTransition performs the swap status transition.
+// Due to pointer semantics, the function mutates the given swap.
+func doSwapStatusTransition(swap *data.Swap, requestedSwapStatus string) {
 	now := time.Now()
-	swap.AcceptedAt = &now
-
-	err = app.models.Swaps.Update(swap)
-	if err != nil {
-		switch {
-		case errors.Is(err, data.ErrEditConflict):
-			app.editConflictResponse(w, r)
-		default:
-			app.serverErrorLogResponse(w, r, err)
-		}
-		return
-	}
-
-	err = app.writeJSON(w, http.StatusOK, envelope{"swap": swap}, nil)
-	if err != nil {
-		app.serverErrorLogResponse(w, r, err)
-		return
+	if requestedSwapStatus == StatusSwapAccepted {
+		swap.IsAccepted = true
+		swap.AcceptedAt = &now
+	} else if requestedSwapStatus == StatusSwapRejected {
+		swap.IsRejected = true
+		swap.IsEnded = true
+		swap.RejectedAt = &now
+		swap.EndedAt = &now
+	} else if requestedSwapStatus == StatusSwapEnded {
+		swap.IsEnded = true
+		swap.EndedAt = &now
 	}
 }
 
-// rejectSwapHandler handles the rejection of the given swap.
-func (app *application) rejectSwapHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := app.extractIDParam(r)
+// updateSwapStatusHandler handles the possible status changes of the swaps.
+func (app *application) updateSwapStatusHandler(w http.ResponseWriter, r *http.Request) {
+	authUser := app.contextGetUser(r)
+
+	var input struct {
+		Status string `json:"status"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.errorResponse(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+	if !isValidInputSwapStatus(input.Status) {
+		app.errorResponse(w, r, http.StatusBadRequest, fmt.Sprintf("not valid status value: %q", input.Status))
+		return
+	}
+
+	swapID, err := app.extractIDParam(r)
 	if err != nil {
 		app.notFoundResponse(w, r)
 		return
 	}
 
-	swap, err := app.models.Swaps.Get(id)
+	swap, err := app.models.Swaps.Get(swapID)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
@@ -228,16 +256,39 @@ func (app *application) rejectSwapHandler(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	if swap.IsAccepted || swap.IsRejected || swap.IsEnded {
-		app.badRequestResponse(w, r, errors.New("swap is not rejectable"))
+	if err := validateSwapStatusTransition(swap.IsAccepted, swap.IsRejected, swap.IsEnded, input.Status); err != nil {
+		app.badRequestResponse(w, r, err)
 		return
 	}
 
-	swap.IsRejected = true
-	swap.IsEnded = true
-	now := time.Now()
-	swap.RejectedAt = &now
-	swap.EndedAt = &now
+	recipientInstrument, err := app.models.Instruments.Get(swap.RecipientInstrumentID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.badRequestResponse(w, r, errors.New("recipient instrument not found"))
+		default:
+			app.serverErrorLogResponse(w, r, err)
+		}
+		return
+	}
+
+	requesterInstrument, err := app.models.Instruments.Get(swap.RequesterInstrumentID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.badRequestResponse(w, r, errors.New("recipient instrument not found"))
+		default:
+			app.serverErrorLogResponse(w, r, err)
+		}
+		return
+	}
+
+	if !isValidSwapStatusTransitionUser(input.Status, requesterInstrument.OwnerUserID, recipientInstrument.OwnerUserID, authUser.ID) {
+		app.forbiddenResponse(w, r)
+		return
+	}
+
+	doSwapStatusTransition(swap, input.Status)
 
 	err = app.models.Swaps.Update(swap)
 	if err != nil {
@@ -255,46 +306,5 @@ func (app *application) rejectSwapHandler(w http.ResponseWriter, r *http.Request
 		app.serverErrorLogResponse(w, r, err)
 		return
 	}
-}
 
-// endSwapHandler handles the end of a swap withthe given id.
-func (app *application) endSwapHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := app.extractIDParam(r)
-	if err != nil {
-		app.notFoundResponse(w, r)
-		return
-	}
-
-	swap, err := app.models.Swaps.Get(id)
-	if err != nil {
-		switch {
-		case errors.Is(err, data.ErrRecordNotFound):
-			app.notFoundResponse(w, r)
-			return
-		default:
-			app.serverErrorLogResponse(w, r, err)
-			return
-		}
-	}
-
-	swap.IsEnded = true
-	now := time.Now()
-	swap.EndedAt = &now
-
-	err = app.models.Swaps.Update(swap)
-	if err != nil {
-		switch {
-		case errors.Is(err, data.ErrEditConflict):
-			app.editConflictResponse(w, r)
-		default:
-			app.serverErrorLogResponse(w, r, err)
-		}
-		return
-	}
-
-	err = app.writeJSON(w, http.StatusOK, envelope{"swap": swap}, nil)
-	if err != nil {
-		app.serverErrorLogResponse(w, r, err)
-		return
-	}
 }

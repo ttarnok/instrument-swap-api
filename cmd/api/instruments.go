@@ -151,6 +151,8 @@ func (app *application) createInstrumentHandler(w http.ResponseWriter, r *http.R
 // JSON items with null values will be ignored and will remain unchanged.
 func (app *application) updateInstrumentHandler(w http.ResponseWriter, r *http.Request) {
 
+	ownerUser := app.contextGetUser(r)
+
 	id, err := app.extractIDParam(r)
 	if err != nil {
 		app.notFoundResponse(w, r)
@@ -165,6 +167,11 @@ func (app *application) updateInstrumentHandler(w http.ResponseWriter, r *http.R
 		default:
 			app.serverErrorLogResponse(w, r, err)
 		}
+		return
+	}
+
+	if ownerUser.ID != instrument.OwnerUserID {
+		app.forbiddenResponse(w, r)
 		return
 	}
 

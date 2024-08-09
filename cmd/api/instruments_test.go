@@ -429,6 +429,7 @@ func TestUpdateInstrumentHandler(t *testing.T) {
 	type testCase struct {
 		name               string
 		input              inputInstrument
+		ownerUser          data.User
 		pathParam          string
 		expectedIndex      int
 		expectedStatusCode int
@@ -443,6 +444,7 @@ func TestUpdateInstrumentHandler(t *testing.T) {
 				Name:         "TB303",
 				Manufacturer: "Roland",
 			},
+			ownerUser:          data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			pathParam:          "1",
 			expectedIndex:      0,
 			expectedStatusCode: http.StatusOK,
@@ -474,6 +476,7 @@ func TestUpdateInstrumentHandler(t *testing.T) {
 				Description:     "This is a dummy test description",
 				FamousOwners:    []string{"Apple", "Banana", "Cherry"},
 			},
+			ownerUser:          data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			pathParam:          "1",
 			expectedIndex:      0,
 			expectedStatusCode: http.StatusOK,
@@ -496,6 +499,7 @@ func TestUpdateInstrumentHandler(t *testing.T) {
 		{
 			name:               "not valid path param",
 			input:              inputInstrument{},
+			ownerUser:          data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			pathParam:          "no",
 			expectedIndex:      -1,
 			expectedStatusCode: http.StatusNotFound,
@@ -505,11 +509,25 @@ func TestUpdateInstrumentHandler(t *testing.T) {
 		{
 			name:               "not existing path param",
 			input:              inputInstrument{},
+			ownerUser:          data.User{ID: 1, Name: "Test User", Email: "testuser@example.com"},
 			pathParam:          "10000",
 			expectedIndex:      -1,
 			expectedStatusCode: http.StatusNotFound,
 			expectedResult:     nil,
 			expectedErrResult:  map[string]string{"error": "the requested resource could not be found"},
+		},
+		{
+			name: "attempt to update instrument for a different user",
+			input: inputInstrument{
+				Name:         "TB303",
+				Manufacturer: "Roland",
+			},
+			ownerUser:          data.User{ID: 2, Name: "Test User", Email: "testuser@example.com"},
+			pathParam:          "1",
+			expectedIndex:      0,
+			expectedStatusCode: http.StatusForbidden,
+			expectedResult:     nil,
+			expectedErrResult:  nil,
 		},
 	}
 
@@ -521,8 +539,17 @@ func TestUpdateInstrumentHandler(t *testing.T) {
 				models: data.Models{Instruments: mocks.NewNonEmptyInstrumentModelMock(testData)},
 			}
 
+			setUser := func(next http.HandlerFunc) http.HandlerFunc {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+					r = app.contextSetUser(r, &tc.ownerUser)
+
+					next.ServeHTTP(w, r)
+				})
+			}
+
 			mux := http.NewServeMux()
-			mux.HandleFunc("POST /{id}", app.updateInstrumentHandler)
+			mux.HandleFunc("POST /{id}", setUser(app.updateInstrumentHandler))
 
 			ts := httptest.NewServer(mux)
 			defer ts.Close()

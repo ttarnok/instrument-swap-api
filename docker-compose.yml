@@ -1,7 +1,21 @@
-# Use postgres/example user/password credentials
-version: '3.9'
-
 services:
+
+  app:
+    container_name: instrument-swap-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    entrypoint: ./api -port=${INSTRUMENT_SWAP_API_PORT} -db-dsn=${INSTRUMENT_SWAP_DB_DSN} -jwt-secret=${JWT_SECRET} -redis-address=${REDIS_ADDR} -redis-password=${REDIS_PASSWORD} -redis-db=${REDIS_DB}
+    ports:
+      - "127.0.0.1:4000:4000"
+    networks:
+      - test-network
+    depends_on:
+      - redis
+      - db
+      - migrate
 
   db:
     image: postgres:16-alpine
@@ -14,6 +28,24 @@ services:
       - ./init-scripts:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U instrumentswap"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: migrate/migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/database
+    entrypoint: migrate -path ./database -database $INSTRUMENT_SWAP_DB_DSN up
+    networks:
+      - test-network
 
   redis:
     image: redis:alpine
@@ -21,3 +53,9 @@ services:
     restart: always
     ports:
       - "6379:6379"
+    networks:
+      - test-network
+networks:
+  test-network:
+    name: test-network
+    driver: bridge

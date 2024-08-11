@@ -1,5 +1,5 @@
 
-include .envrc
+include .env
 # ============================================================================ #
 # HELPERS
 # ============================================================================ #
@@ -30,7 +30,7 @@ build/api: code/fmt
 .PHONY: run/api
 run/api: build/api
 	@echo 'Running the application...'
-	@./bin/api -port=4000 -db-dsn=$(INSTRUMENT_SWAP_DB_DSN) -jwt-secret=$(JWT_SECRET) -redis-address=${REDIS_ADDR} -redis-password=${REDIS_PASSWORD} -redis-db=${REDIS_DB}
+	@./bin/api -port=4000 -db-dsn=$(INSTRUMENT_SWAP_DB_DSN) -jwt-secret=$(JWT_SECRET) -redis-address=${REDIS_ADDR} -redis-password=${REDIS_ADDR} -redis-db=${REDIS_DB}
 
 ## docker/compose/up: runs docker compose up for the local dev db
 .PHONY: docker/compose/up
@@ -41,6 +41,22 @@ docker/compose/up:
 .PHONY: docker/compose/down
 docker/compose/down:
 	docker-compose down
+
+## docker/build/app: builds the docker image of the dockerized application
+.PHONY: docker/build/app
+docker/build/app:
+	docker build -t instrument-swap-api:test .
+
+## docker/run/app: runs the built docker image of the dockerized application
+.PHONY: docker/run/app
+docker/run/app:
+	docker run instrument-swap-api:test \
+           -port=4000 \
+           -db-dsn=${INSTRUMENT_SWAP_DB_DSN} \
+           -jwt-secret=${JWT_SECRET} \
+           -redis-address=${REDIS_ADDR} \
+           -redis-password=${REDIS_PASSWORD} \
+           -redis-db=${REDIS_DB}
 
 ## db/migrations/new name=fizz: creates a pair of new migration files with the name of fizz
 .PHONY: db/migrations/new
@@ -67,8 +83,6 @@ db/migrations/version:
 .PHONY: db/migrations/force
 db/migrations/force:
 	migrate -path=./migrations -database=$(INSTRUMENT_SWAP_DB_DSN) force ${version}
-
-
 
 # ============================================================================ #
 # QUALITY CONTROL

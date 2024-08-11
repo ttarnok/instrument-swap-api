@@ -196,7 +196,15 @@ func openDB(cfg config) (*sql.DB, error) {
 	db.SetMaxIdleConns(cfg.db.maxIdleConns)
 	db.SetConnMaxIdleTime(cfg.db.maxIdleTime)
 
-	err = db.PingContext(ctx)
+	// In case of error, retries 10 times and sleeps for 200 milliseconds.
+	for range 10 {
+		err = db.PingContext(ctx)
+		if err == nil {
+			break
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+
 	if err != nil {
 		errClose := db.Close()
 		if errClose != nil {

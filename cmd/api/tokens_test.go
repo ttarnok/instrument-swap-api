@@ -116,7 +116,7 @@ func TestLoginHandler(t *testing.T) {
 			client := &http.Client{}
 			resp, err := client.Do(req)
 			if err != nil {
-				log.Fatal(err)
+				t.Fatal(err)
 			}
 
 			if tc.expectedStatusCode != resp.StatusCode {

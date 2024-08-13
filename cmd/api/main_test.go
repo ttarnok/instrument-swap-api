@@ -2,23 +2,23 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"log/slog"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/ttarnok/instrument-swap-api/internal/auth"
 	"github.com/ttarnok/instrument-swap-api/internal/data"
 	"github.com/ttarnok/instrument-swap-api/internal/testhelpers"
 )
 
+// MainTestSuite is the testsuite for testing the applications api endpoints with full database integration.
 type MainTestSuite struct {
 	suite.Suite
 	pgContainer    *testhelpers.PostgresContainer
@@ -28,6 +28,7 @@ type MainTestSuite struct {
 	ctx            context.Context
 }
 
+// SetupSuite sets up the testsuite, creates a test server with all api endpoints.
 func (suite *MainTestSuite) SetupSuite() {
 
 	suite.ctx = context.Background()
@@ -46,6 +47,7 @@ func (suite *MainTestSuite) SetupSuite() {
 	//setting up the test application
 	var cfg config
 
+	cfg.env = "teszt"
 	cfg.db.dsn = suite.pgContainer.ConnectionString
 	cfg.db.maxIdleConns = 25
 	cfg.db.maxOpenConns = 25
@@ -81,6 +83,7 @@ func (suite *MainTestSuite) SetupSuite() {
 	suite.ts = httptest.NewServer(suite.app.routes())
 }
 
+// TearDownSuite tears down the testsuit. Release all used resources.
 func (suite *MainTestSuite) TearDownSuite() {
 	defer suite.ts.Close()
 	if err := suite.pgContainer.Terminate(suite.ctx); err != nil {
@@ -91,48 +94,31 @@ func (suite *MainTestSuite) TearDownSuite() {
 	}
 }
 
+// TestHealthCheck tests the healthcheck api endpoint.
 func (suite *MainTestSuite) TestHealthCheck() {
+	expectedStatusCode := 200
+
+	expectedRespBody := make(map[string]map[string]string)
+	expectedRespBody["liveliness"] = make(map[string]string)
+	expectedRespBody["liveliness"]["environment"] = "teszt"
+	expectedRespBody["liveliness"]["status"] = "available"
+	expectedRespBody["liveliness"]["version"] = "-"
+
 	t := suite.T()
 
 	path := fmt.Sprintf("%s/v1/liveliness", suite.ts.URL)
 
-	req, err := http.NewRequest("GET", path, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	resp := testhelpers.DoTestAPICall(t, "GET", path, nil)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Equal(t, expectedStatusCode, resp.StatusCode, "status code mismatch")
 
-	if resp.StatusCode != 200 {
-		t.Error("expected status code 200, got", resp.StatusCode)
-	}
+	respBody := testhelpers.GetResponseBody[map[string]map[string]string](t, resp)
 
-	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	respEnvelope := make(map[string]map[string]string)
-	err = json.Unmarshal(body, &respEnvelope)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	fmt.Println(respEnvelope)
+	assert.Equal(t, expectedRespBody, respBody, "response body mismatch")
 
 }
 
+// TestMainTestSuite runs the MainTestSuite related tests.
 func TestMainTestSuite(t *testing.T) {
 	suite.Run(t, new(MainTestSuite))
 }

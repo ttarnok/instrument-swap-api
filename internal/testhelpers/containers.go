@@ -12,11 +12,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+// PostgresContainer represents a Postgres testing container and its connection string.
 type PostgresContainer struct {
 	*postgres.PostgresContainer
 	ConnectionString string
 }
 
+// CreatePostgresContainer creates a new PostgresConatiner.
 func CreatePostgresContainer(ctx context.Context) (*PostgresContainer, error) {
 	pgContainer, err := postgres.Run(ctx,
 		"postgres:16-alpine",
@@ -42,11 +44,13 @@ func CreatePostgresContainer(ctx context.Context) (*PostgresContainer, error) {
 	}, nil
 }
 
+// RedisContainer represents a redis test conatainer and its connection string.
 type RedisContainer struct {
 	*redis.RedisContainer
 	ConnectionString string
 }
 
+// CreateRedisContainer creates a new RedisContainer.
 func CreateRedisContainer(ctx context.Context) (*RedisContainer, error) {
 	redisContainer, err := redis.Run(ctx,
 		"redis:alpine",

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -96,6 +98,8 @@ func (suite *MainTestSuite) TearDownSuite() {
 
 // TestHealthCheck tests the healthcheck api endpoint.
 func (suite *MainTestSuite) TestHealthCheck() {
+	t := suite.T()
+
 	expectedStatusCode := 200
 
 	expectedRespBody := make(map[string]map[string]string)
@@ -103,8 +107,6 @@ func (suite *MainTestSuite) TestHealthCheck() {
 	expectedRespBody["liveliness"]["environment"] = "teszt"
 	expectedRespBody["liveliness"]["status"] = "available"
 	expectedRespBody["liveliness"]["version"] = "-"
-
-	t := suite.T()
 
 	path := fmt.Sprintf("%s/v1/liveliness", suite.ts.URL)
 
@@ -116,6 +118,42 @@ func (suite *MainTestSuite) TestHealthCheck() {
 
 	assert.Equal(t, expectedRespBody, respBody, "response body mismatch")
 
+}
+
+func CreateRequestBody[T any](t *testing.T, input T) io.Reader {
+
+	reqBody, err := json.Marshal(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return bytes.NewBuffer(reqBody)
+}
+
+// TestBasicUserStory tests a basic user story.
+// 1. User registration.
+func (suite *MainTestSuite) TestBasicUserStory() {
+	t := suite.T()
+	// ***************************************************************************
+	// User registration.
+	expectedStatusCode := 201
+
+	input := struct {
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}{
+		Name:     "John Smith",
+		Email:    "johnsmith@example.com",
+		Password: "asd123asd1234",
+	}
+
+	path := fmt.Sprintf("%s/v1/users", suite.ts.URL)
+	resp := testhelpers.DoTestAPICall(t, "POST", path, CreateRequestBody(t, input))
+	assert.Equal(t, expectedStatusCode, resp.StatusCode, "status code mismatch")
+	respBody := testhelpers.GetResponseBody[map[string]*data.User](t, resp)
+	assert.NotEqual(t, respBody["user"].ID, "user ID should not be 0")
+	assert.Equal(t, input.Name, respBody["user"].Name, "user name mismatch")
+	assert.Equal(t, input.Email, respBody["user"].Email, "email mismatch")
 }
 
 // TestMainTestSuite runs the MainTestSuite related tests.

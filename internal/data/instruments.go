@@ -136,7 +136,7 @@ func (i *InstrumentModel) GetAll(name string, manufacturer string, iType string,
 
 	//nolint:gosec
 	query := fmt.Sprintf(`
-		SELECT count(*) over(), id, name, manufacturer, manufacture_year, type, estimated_value,
+		SELECT count(*) over(), id, created_at, name, manufacturer, manufacture_year, type, estimated_value,
 			condition, description, famous_owners, owner_user_id, version
 		FROM instruments
 		WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
@@ -177,6 +177,7 @@ func (i *InstrumentModel) GetAll(name string, manufacturer string, iType string,
 		err := rows.Scan(
 			&totalRecords,
 			&instrument.ID,
+			&instrument.CreatedAt,
 			&instrument.Name,
 			&instrument.Manufacturer,
 			&instrument.ManufactureYear,

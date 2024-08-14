@@ -33,6 +33,7 @@ type MainTestSuite struct {
 }
 
 // SetupSuite sets up the testsuite, creates a test server with all api endpoints.
+// This test server has turned off rate limiter.
 func (suite *MainTestSuite) SetupSuite() {
 
 	suite.ctx = context.Background()
@@ -58,7 +59,7 @@ func (suite *MainTestSuite) SetupSuite() {
 	cfg.db.maxIdleTime = 15 * time.Minute
 	cfg.limiter.requestPerSecond = 2
 	cfg.limiter.burst = 4
-	cfg.limiter.enabled = true
+	cfg.limiter.enabled = false // !!!
 	cfg.jwt.secret = "testsecret"
 	cfg.redis.address = suite.redisContainer.ConnectionString
 	cfg.redis.password = ""
@@ -134,8 +135,11 @@ func CreateRequestBody[T any](t *testing.T, input T) io.Reader {
 // TestBasicUserStory tests a basic user story.
 // This test does the following test calls in the following order.
 // 1. User registration, on happy path.
-// 2. User login, happy path.
-// 3. Create an instrument.
+// 2. User login, on happy path.
+// 3. Create an instrument on happy path.
+// 4. Create another instrument, on happy path.
+// 5. Get the first instrument for the user, on the happy path.
+// 6. Get all instruments for the user, on the happy path.
 func (suite *MainTestSuite) TestBasicUserStory() {
 	t := suite.T()
 
@@ -162,7 +166,7 @@ func (suite *MainTestSuite) TestBasicUserStory() {
 	assert.Equal(t, inputRegister.Email, respRegisterBody["user"].Email, "email mismatch")
 
 	// ***************************************************************************
-	// 2. User login, happy path.
+	// 2. User login, on happy path.
 	expectedStatusCode = http.StatusCreated
 	inputLogin := struct {
 		Email    string `json:"email"`
@@ -183,9 +187,9 @@ func (suite *MainTestSuite) TestBasicUserStory() {
 	assert.NotEmpty(t, refreshToken, "refresh token should not be empty")
 
 	// ***************************************************************************
-	// 3. Create an instrument.
+	// 3. Create an instrument on happy path.
 	expectedStatusCode = http.StatusCreated
-	inputInstrument := struct {
+	inputInstrument1 := struct {
 		Name            string   `json:"name"`
 		Manufacturer    string   `json:"manufacturer"`
 		ManufactureYear int32    `json:"manufacture_year"`
@@ -207,21 +211,107 @@ func (suite *MainTestSuite) TestBasicUserStory() {
 	path = fmt.Sprintf("%s/v1/instruments", suite.ts.URL)
 	headers := make(map[string]string)
 	headers["Authorization"] = strings.Join([]string{"Bearer", accessToken}, " ")
-	resp = testhelpers.DoTestAPICall(t, "POST", path, CreateRequestBody(t, inputInstrument), headers)
+	resp = testhelpers.DoTestAPICall(t, "POST", path, CreateRequestBody(t, inputInstrument1), headers)
 	assert.Equal(t, expectedStatusCode, resp.StatusCode, "status code mismatch")
-	respInstrumentBody := testhelpers.GetResponseBody[map[string]*data.Instrument](t, resp)
-	createdInstrument, ok := respInstrumentBody["instrument"]
+	respInstrumentBody1 := testhelpers.GetResponseBody[map[string]*data.Instrument](t, resp)
+	createdInstrument1, ok := respInstrumentBody1["instrument"]
 
 	assert.True(t, ok, "the newly created instrument should be sent")
-	assert.NotEmpty(t, createdInstrument.ID, "the newly created instrumnent id shoud not be empty or 0")
-	assert.NotEmpty(t, createdInstrument.CreatedAt, "created at date should not be empty")
-	assert.Equal(t, inputInstrument.Name, createdInstrument.Name, "instrument name mismatch")
-	assert.Equal(t, inputInstrument.Manufacturer, createdInstrument.Manufacturer, "instrument manufacturer mismatch")
-	assert.Equal(t, inputInstrument.ManufactureYear, createdInstrument.ManufactureYear, "instrument manufacture year mismatch")
-	assert.Equal(t, inputInstrument.Type, createdInstrument.Type, "instrument type mismatch")
-	assert.Equal(t, inputInstrument.FamousOwners, createdInstrument.FamousOwners, "famous users mismatch")
-	assert.Equal(t, respRegisterBody["user"].ID, createdInstrument.OwnerUserID, "owner instrumetn id mismatch")
-	assert.NotEmpty(t, createdInstrument.Version, "version should not be empty")
+	assert.NotEmpty(t, createdInstrument1.ID, "the newly created instrumnent id shoud not be empty or 0")
+	assert.NotEmpty(t, createdInstrument1.CreatedAt, "created at date should not be empty")
+	assert.Equal(t, inputInstrument1.Name, createdInstrument1.Name, "instrument name mismatch")
+	assert.Equal(t, inputInstrument1.Manufacturer, createdInstrument1.Manufacturer, "instrument manufacturer mismatch")
+	assert.Equal(t, inputInstrument1.ManufactureYear, createdInstrument1.ManufactureYear, "instrument manufacture year mismatch")
+	assert.Equal(t, inputInstrument1.Type, createdInstrument1.Type, "instrument type mismatch")
+	assert.Equal(t, inputInstrument1.EstimatedValue, createdInstrument1.EstimatedValue, "estimated value mismatch")
+	assert.Equal(t, inputInstrument1.Condition, createdInstrument1.Condition, "condition mismatch")
+	assert.Equal(t, inputInstrument1.Description, createdInstrument1.Description, "description mismatch")
+	assert.Equal(t, inputInstrument1.FamousOwners, createdInstrument1.FamousOwners, "famous users mismatch")
+	assert.Equal(t, respRegisterBody["user"].ID, createdInstrument1.OwnerUserID, "owner instrumetn id mismatch")
+	assert.NotEmpty(t, createdInstrument1.Version, "version should not be empty")
+
+	// ***************************************************************************
+	// 4. Create another instrument, on happy path.
+	expectedStatusCode = http.StatusCreated
+	inputInstrument2 := struct {
+		Name            string   `json:"name"`
+		Manufacturer    string   `json:"manufacturer"`
+		ManufactureYear int32    `json:"manufacture_year"`
+		Type            string   `json:"type"`
+		EstimatedValue  int64    `json:"estimated_value"`
+		Condition       string   `json:"condition"`
+		Description     string   `json:"description"`
+		FamousOwners    []string `json:"famous_owners"`
+	}{
+		Name:            "Minimoog",
+		Manufacturer:    "Moog",
+		ManufactureYear: 1978,
+		Type:            "synthesizer",
+		EstimatedValue:  10000,
+		Condition:       "excellent",
+		Description:     "A really nice subtractive synth.",
+		FamousOwners:    []string{"Tangerine Dream"},
+	}
+	path = fmt.Sprintf("%s/v1/instruments", suite.ts.URL)
+	headers = make(map[string]string)
+	headers["Authorization"] = strings.Join([]string{"Bearer", accessToken}, " ")
+	resp = testhelpers.DoTestAPICall(t, "POST", path, CreateRequestBody(t, inputInstrument2), headers)
+	assert.Equal(t, expectedStatusCode, resp.StatusCode, "status code mismatch")
+	respInstrumentBody2 := testhelpers.GetResponseBody[map[string]*data.Instrument](t, resp)
+	createdInstrument2, ok := respInstrumentBody2["instrument"]
+
+	assert.True(t, ok, "the newly created instrument should be sent")
+	assert.NotEmpty(t, createdInstrument2.ID, "the newly created instrumnent id shoud not be empty or 0")
+	assert.NotEmpty(t, createdInstrument2.CreatedAt, "created at date should not be empty")
+	assert.Equal(t, inputInstrument2.Name, createdInstrument2.Name, "instrument name mismatch")
+	assert.Equal(t, inputInstrument2.Manufacturer, createdInstrument2.Manufacturer, "instrument manufacturer mismatch")
+	assert.Equal(t, inputInstrument2.ManufactureYear, createdInstrument2.ManufactureYear, "instrument manufacture year mismatch")
+	assert.Equal(t, inputInstrument2.Type, createdInstrument2.Type, "instrument type mismatch")
+	assert.Equal(t, inputInstrument2.EstimatedValue, createdInstrument2.EstimatedValue, "estimated value mismatch")
+	assert.Equal(t, inputInstrument2.Condition, createdInstrument2.Condition, "condition mismatch")
+	assert.Equal(t, inputInstrument2.Description, createdInstrument2.Description, "description mismatch")
+	assert.Equal(t, inputInstrument2.FamousOwners, createdInstrument2.FamousOwners, "famous users mismatch")
+	assert.Equal(t, respRegisterBody["user"].ID, createdInstrument2.OwnerUserID, "owner instrumetn id mismatch")
+	assert.NotEmpty(t, createdInstrument2.Version, "version should not be empty")
+
+	// ***************************************************************************
+	// 5. Get the first instrument for the user, on the happy path.
+	expectedStatusCode = http.StatusOK
+	path = fmt.Sprintf("%s/v1/instruments/%d", suite.ts.URL, createdInstrument1.ID)
+	headers = make(map[string]string)
+	headers["Authorization"] = strings.Join([]string{"Bearer", accessToken}, " ")
+	resp = testhelpers.DoTestAPICall(t, "GET", path, nil, headers)
+	assert.Equal(t, expectedStatusCode, resp.StatusCode, "status code mismatch")
+	respInstrumentBody3 := testhelpers.GetResponseBody[map[string]*data.Instrument](t, resp)
+	retrievedInstrument, ok := respInstrumentBody3["instrument"]
+	assert.True(t, ok, "the newly created instrument should be sent")
+	assert.Equal(t, retrievedInstrument, createdInstrument1, "instrument mismatch")
+
+	// ***************************************************************************
+	// 6. Get all instruments for the user, on the happy path.
+	type ResponseType struct {
+		Instruments []*data.Instrument `json:"instruments"`
+		Metadata    data.MetaData      `json:"metadata"`
+	}
+
+	expectedMetadata := data.MetaData{
+		CurrentPage:  1,
+		PageSize:     20,
+		FirstPage:    1,
+		LastPage:     1,
+		TotalRecords: 2,
+	}
+
+	expectedStatusCode = http.StatusOK
+	path = fmt.Sprintf("%s/v1/instruments", suite.ts.URL)
+	headers = make(map[string]string)
+	headers["Authorization"] = strings.Join([]string{"Bearer", accessToken}, " ")
+	resp = testhelpers.DoTestAPICall(t, "GET", path, nil, headers)
+	assert.Equal(t, expectedStatusCode, resp.StatusCode, "status code mismatch")
+	respInstrumentsBody := testhelpers.GetResponseBody[ResponseType](t, resp)
+	assert.Equal(t, 2, len(respInstrumentsBody.Instruments), "response should contain 2 instruments")
+	assert.Equal(t, []*data.Instrument{createdInstrument1, createdInstrument2}, respInstrumentsBody.Instruments, "instruments mismatch")
+	assert.Equal(t, expectedMetadata, respInstrumentsBody.Metadata)
 
 }
 

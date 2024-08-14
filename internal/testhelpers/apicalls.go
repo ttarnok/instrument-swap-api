@@ -9,12 +9,16 @@ import (
 
 // DoTestAPICall helper function calls the given test endpoint, and returns the response.
 // DoTestAPICall handles potential errors via the given *testint.T value.
-func DoTestAPICall(t *testing.T, method string, url string, body io.Reader) *http.Response {
+func DoTestAPICall(t *testing.T, method string, url string, body io.Reader, headers map[string]string) *http.Response {
 	t.Helper()
 
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	for header, value := range headers {
+		req.Header.Add(header, value)
 	}
 
 	client := &http.Client{}

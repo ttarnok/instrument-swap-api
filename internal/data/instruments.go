@@ -38,6 +38,7 @@ func ValidateInstrument(v *validator.Validator, instrument *Instrument) {
 
 	v.Check(instrument.ManufactureYear != 0, "manufacture_year", "must be provided")
 	v.Check(instrument.ManufactureYear >= 0, "manufacture_year", "must be greater than 0")
+	//nolint:gosec // Year value will always fit into an int32.
 	v.Check(instrument.ManufactureYear <= int32(time.Now().Year()), "manufacture_year", "must not be in the future")
 
 	v.Check(instrument.Type != "", "type", "must not be empty")

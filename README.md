@@ -24,40 +24,42 @@ Development expects to run in a Unix-like system with support for makefiles and 
 
 ## Usage
 
-- [X] GET    /v1/users // Show detailed list of users
-- [X] POST   /v1/users // Register a new user
-- [X] PUT    /v1/users/{id} // Update a user
-- [X] DELETE /v1/users/{id} // Delete a user
-- [ ] PUT    /v1/users/activated // Activate a new user
-- [X] PUT    /v1/users/password // Update the password of the user
+Running the application with the ```--help``` or ```-h``` flags will display the possible command-line options and exit.
 
-- [X] GET    /v1/instruments // Show detailed list of instruments (pagination)
-- [X] POST   /v1/instruments // Create a new instrument
-- [X] GET    /v1/instruments/{id} // Show the details of a specific instrument
-- [X] PATCH  /v1/instruments/{id} // Update a specific instrument
-- [X] DELETE /v1/instruments/{id} // Delete a specific instrument
+### API endpoints
+- GET    /v1/users // Show detailed list of users
+- POST   /v1/users // Register a new user
+- PUT    /v1/users/{id} // Update a user
+- DELETE /v1/users/{id} // Delete a user
+- PUT    /v1/users/password // Update the password of the user
 
-- [X] GET    /v1/swaps // Return the ongoing swap requests
-- [X] GET    /v1/swaps/{id} // Get a specific swap by id
-- [X] POST   /v1/swaps // Initiates a new swap request
-- [X] POST   /v1/swaps/{id}/accept // Accepts a swap request
-- [X] POST   /v1/swaps/{id}/reject // Rejects a swap request
-- [X] DELETE /v1/swaps/{id} // Ends an instrument swap
+- GET    /v1/instruments // Show detailed list of instruments (pagination)
+- POST   /v1/instruments // Create a new instrument
+- GET    /v1/instruments/{id} // Show the details of a specific instrument
+- PATCH  /v1/instruments/{id} // Update a specific instrument
+- DELETE /v1/instruments/{id} // Delete a specific instrument
 
-- [X] POST   /v1/token // Return a new Access Token + Refresh Token
-- [X] POST   /v1/token/refresh // Return a new Access Token
-- [X] POST   /v1/token/blacklist // Blacklists a refresh token
-- [X] POST   /v1/token/logout // Blacklists the given access and refresh tokens
+- GET    /v1/swaps // Return the ongoing swap requests
+- GET    /v1/swaps/{id} // Get a specific swap by id
+- POST   /v1/swaps // Initiates a new swap request
+- POST   /v1/swaps/{id}/accept // Accepts a swap request
+- POST   /v1/swaps/{id}/reject // Rejects a swap request
+- DELETE /v1/swaps/{id} // Ends an instrument swap
 
-- [X] GET    /v1/liveliness
-- [ ] GET    /v1/readyness
+- POST   /v1/token // Return a new Access Token + Refresh Token
+- POST   /v1/token/refresh // Return a new Access Token
+- POST   /v1/token/blacklist // Blacklists a refresh token
+- POST   /v1/token/logout // Blacklists the given access and refresh tokens
 
-- [X] GET    /debug/vars // Display apprication metrics
-- [X] GET    /debug/pprof // Display debug infos
+- GET    /v1/liveliness
+
+- GET    /debug/vars // Display apprication metrics
+- GET    /debug/pprof // Display debug infos
 
 ## Release milestones
 
 ### TODO List
+- Implement user activation.
 - Replace pq database driver to [pgx](https://github.com/jackc/pgx).
 - Refactor the whole application from the (fat service pattern)[https://www.alexedwards.net/blog/the-fat-service-pattern] into more decoupled parts.
   - Every decoupled part should depend only on the code that they really use. (Interface segregation principle: "Clients should not be forced to depend upon interfaces that they do not use.")
@@ -71,7 +73,7 @@ Development expects to run in a Unix-like system with support for makefiles and 
 - Consider using Elasticsearch Logstash Kibana stack for logs?
 - Implement tracing via [Opentelemetry](https://opentelemetry.io/docs/languages/go/) and [Zipkin](https://zipkin.io)
 - Make sure the api is not leaking implementation details.
-- Implement better metrics gathering. [prometheus](https://prometheus.io)
+- Implement better metrics gathering. [prometheus](https://prometheus.io) or [datadog](https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/go/). For local development here is a terminal based monitoring solution: [exvarmon](https://github.com/divan/expvarmon).
 - Implement a basic CI/CD pipeline via github actions.
 - Refactor the application to use Kubernetes.
 - Consider refactoring into Microservices architecture.

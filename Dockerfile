@@ -1,4 +1,4 @@
-FROM golang:1.22 AS deps
+FROM golang:1.23 AS deps
 
 WORKDIR /instrument-swap-api
 ADD *.mod *.sum ./

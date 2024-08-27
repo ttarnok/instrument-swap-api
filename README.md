@@ -67,13 +67,23 @@ Running the application with the ```--help``` or ```-h``` flags will display the
   - Refactor unit tests:
     - Use assertions, mocks and test suites from [testify](https://github.com/stretchr/testify).
     - Refactor all redundant test related functionality into helper functions.
-- Implement better support for user roles.
+- Implement better support for user roles. Consider store roles in the jwt access tokens.
 - Consider using [viper](https://github.com/spf13/viper) for better configuration support.
-- Make sure every part of the application logs when it should log. (trace id)
+- Make sure every part of the application logs when it should log:
+  - Create informative logs to inform about the state changes of the application. (startup/shutdown etc.)
+  - Create a trace id generator middleware that generates a traceid for every incoming request and put this trace id into the request context.
+  - Create a logger middleware that logs every request start/completion with trace id.
+  - Make sure, every time an error is handled by code, it is logged (and logged exactly once).
+  - Make sure, every panic handling is logged with the current stack trace information.
 - Consider using Elasticsearch Logstash Kibana stack for logs?
 - Implement tracing via [Opentelemetry](https://opentelemetry.io/docs/languages/go/) and [Zipkin](https://zipkin.io)
-- Make sure the api is not leaking implementation details.
+- Make sure the api is not leaking implementation details. Make sure the error responses does not leaking implementation details:
+  - Only return standars uniform errors. (safe errors)
+  - In case of nonstandard errors return internal server error. (non safe errors)
 - Implement better metrics gathering. [prometheus](https://prometheus.io) or [datadog](https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/go/). For local development here is a terminal based monitoring solution: [exvarmon](https://github.com/divan/expvarmon).
-- Implement a basic CI/CD pipeline via github actions.
+- Implement a basic CI/CD pipeline via github actions or jenkins.
+- Use [golang-jwt](github.com/golang-jwt/jwt) to handle jwt-s.
+- Support to use multiple secrets for jwt-s. Consider using a keystore to load the secrets from.
+  - Implement the key id claim, so we will know which key was used to sign the token.
 - Refactor the application to use Kubernetes.
 - Consider refactoring into Microservices architecture.

@@ -11,7 +11,7 @@ help:
 	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' | sed -e 's/^/ /'
 
 # ============================================================================ #
-# DEVELOPMENT
+# DEVELOPMENT - LOCAL DEV
 # ============================================================================ #
 
 ## code/fmt: formats the source code
@@ -36,7 +36,11 @@ build/api: code/fmt
 .PHONY: run/api
 run/api: build/api
 	@echo 'Running the application...'
-	@./bin/api -port=4000 -db-dsn=$(INSTRUMENT_SWAP_DB_DSN) -jwt-secret=$(JWT_SECRET) -redis-address=${REDIS_ADDR} -redis-password=${REDIS_PASSWORD} -redis-db=${REDIS_DB}
+	@./bin/api -db-dsn=$(INSTRUMENT_SWAP_DB_DSN) -jwt-secret=$(JWT_SECRET) -redis-address=${REDIS_ADDR} -redis-password=${REDIS_PASSWORD} -redis-db=${REDIS_DB}
+
+# ============================================================================ #
+# DEVELOPMENT - DOCKER
+# ============================================================================ #
 
 ## docker/compose/up: runs docker compose up for the local dev environment
 ## : (Postgres database with migrations, Redis, application binary)
@@ -64,12 +68,20 @@ docker/build/app:
 .PHONY: docker/run/app
 docker/run/app:
 	docker run instrument-swap-api:test \
-           -port=4000 \
            -db-dsn=${INSTRUMENT_SWAP_DB_DSN} \
            -jwt-secret=${JWT_SECRET} \
            -redis-address=${REDIS_ADDR} \
            -redis-password=${REDIS_PASSWORD} \
            -redis-db=${REDIS_DB}
+
+## docker/logs: Fethes the application related logs from docker
+.PHONY: docker/logs
+docker/logs:
+	docker logs -f instrument-swap-api
+
+# ============================================================================ #
+# DEVELOPMENT - DATABASE MIGRATION
+# ============================================================================ #
 
 ## db/migrations/new name=fizz: creates a pair of new migration files with the name of fizz
 .PHONY: db/migrations/new
@@ -109,7 +121,7 @@ db/migrations/force:
 # QUALITY CONTROL
 # ============================================================================ #
 
-## audit: tidy dependencies and format, vet and test all code
+## audit: tidy dependencies, formats, vets, lints and tests all code
 .PHONY: audit
 audit:
 	@echo 'Tidying and verifying module dependencies...'

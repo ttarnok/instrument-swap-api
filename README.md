@@ -1,7 +1,7 @@
 # instrument-swap-api
 
 A backend service which implements the necessary endpoints for a frontend
-that provides functionality for musicians to swap each other's instruments.
+that provides functionality for musicians to swap each other's instruments.\
 This is a personal project to learn Go by building a hands-on example application.
 
 ## Dependencies
@@ -14,9 +14,10 @@ This is a personal project to learn Go by building a hands-on example applicatio
 
 ## Setup
 
-Development expects to run in a Unix-like system with support for makefiles and Git.
+Development expects to run in a Unix-like system with support for Makefile and Git.\
+To set up a development environment, please go through the following steps:
 
-1. Make sure you have a Unix-like system with makefiles support.
+1. Make sure you have a Unix-like system with makefile support.
 2. Make sure that Git is installed and configured properly.
 3. Make sure to install all the listed dependencies in the proper order.
 4. Clone the project code from GitHub.
@@ -61,29 +62,31 @@ Running the application with the ```--help``` or ```-h``` flags will display the
 ### TODO List
 - Implement user activation.
 - Replace pq database driver to [pgx](https://github.com/jackc/pgx).
-- Refactor the whole application from the (fat service pattern)[https://www.alexedwards.net/blog/the-fat-service-pattern] into more decoupled parts.
+- Refactor the whole application from the [fat service pattern](https://www.alexedwards.net/blog/the-fat-service-pattern) into more decoupled parts.
   - Every decoupled part should depend only on the code that they really use. (Interface segregation principle: "Clients should not be forced to depend upon interfaces that they do not use.")
-  - Every dependency should be abstract (dependency injection via depending on interfaces), so the code will become more modular, unit tests will become more clear, unit tests won't depend on the behaviour of the dependencies.
+  - Consider making dependencies abstract (dependency injection via depending on interfaces), so the code will become more modular, unit tests will become more clear, unit tests won't depend on the behaviour of the dependencies.
   - Refactor unit tests:
     - Use assertions, mocks and test suites from [testify](https://github.com/stretchr/testify).
     - Refactor all redundant test related functionality into helper functions.
-- Implement better support for user roles. Consider store roles in the jwt access tokens.
+- Implement better support for user roles. Consider storing roles in the jwt access tokens.
 - Consider using [viper](https://github.com/spf13/viper) for better configuration support.
 - Make sure every part of the application logs when it should log:
   - Create informative logs to inform about the state changes of the application. (startup/shutdown etc.)
   - Create a trace id generator middleware that generates a traceid for every incoming request and put this trace id into the request context.
   - Create a logger middleware that logs every request start/completion with trace id.
-  - Make sure, every time an error is handled by code, it is logged (and logged exactly once).
-  - Make sure, every panic handling is logged with the current stack trace information.
-- Consider using Elasticsearch Logstash Kibana stack for logs?
-- Implement tracing via [Opentelemetry](https://opentelemetry.io/docs/languages/go/) and [Zipkin](https://zipkin.io)
+  - Make sure every time an error is handled by code, it is logged (and logged exactly once).
+  - Make sure every panic handling is logged with the current stack trace information.
+- Consider using [Elasticsearch](https://www.elastic.co/elasticsearch) [Logstash](https://www.elastic.co/logstash) [Kibana](https://www.elastic.co/kibana) stack for logs
+- Implement tracing via [OpenTelemetry](https://opentelemetry.io/docs/languages/go/) and [Zipkin](https://zipkin.io)
 - Make sure the api is not leaking implementation details. Make sure the error responses does not leaking implementation details:
   - Only return standars uniform errors. (safe errors)
   - In case of nonstandard errors return internal server error. (non safe errors)
-- Implement better metrics gathering. [prometheus](https://prometheus.io) or [datadog](https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/go/). For local development here is a terminal based monitoring solution: [exvarmon](https://github.com/divan/expvarmon).
-- Implement a basic CI/CD pipeline via github actions or jenkins.
+- Implement better metrics gathering. [prometheus](https://prometheus.io) or [datadog](https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/go/). For local development, here is a terminal based monitoring solution: [exvarmon](https://github.com/divan/expvarmon).
+- Implement a basic CI/CD pipeline via [GitHub Actions](https://docs.github.com/en/actions) or [Jenkins](https://www.jenkins.io), and deploy it to aws.
 - Use [golang-jwt](github.com/golang-jwt/jwt) to handle jwt-s.
 - Support to use multiple secrets for jwt-s. Consider using a keystore to load the secrets from.
   - Implement the key id claim, so we will know which key was used to sign the token.
-- Refactor the application to use Kubernetes.
+- Refactor the application to use [Kubernetes](https://kubernetes.io).
+  - Consider using [Kind](https://kind.sigs.k8s.io) or [Minikube](https://minikube.sigs.k8s.io/docs/) to run a local development cluster.
+  - Consider using [kustomize](https://github.com/kubernetes-sigs/kustomize) to simplify yaml files.
 - Consider refactoring into Microservices architecture.

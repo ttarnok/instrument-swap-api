@@ -89,7 +89,7 @@ PUT `/v1/users/{id}`
 
 Allows you to update an existing user. Requires authentication, the given user id in the url path should match the user id specified in the JTW Access Token claim.
 
-The request body needs to be in JSON format and includes the user fields that need to be modified:
+The request body needs to be in JSON format and includes the user properties that need to be modified:
  - `name` - string
  - `email` - string
 
@@ -183,7 +183,7 @@ POST `/v1/instruments`
 
 Allows you the create a new instrument. Requires authentication.
 
-The request body needs to be in JSON format and includes the user fields that need to be modified:
+The request body needs to be in JSON format and includes the user properties that need to be modified:
  - `name` - string - Required
  - `manufacturer` - string - Required
  - `manufacture_year` - int - Required
@@ -231,7 +231,7 @@ PATCH `/v1/instruments/{id}`
 
 Allows you to update an existing instrument. Requires authentication, the given instrument id in the url path should match to an instrument with an owner user id specified in the JTW Access Token claim.
 
-The request body needs to be in JSON format and includes the instrument fields that need to be modified:
+The request body needs to be in JSON format and includes the instrument properties that need to be modified:
 - `name` - string
 - `manufacturer` - string
 - `manufacture_year` - int
@@ -261,17 +261,79 @@ Deletes the instrument with the specified instrument id. Requires authentication
 
 Example
 ```
-
 DELETE /v1/instruments/1
 Authorization: Bearer <YOUR TOKEN>
 ```
 
-- GET    /v1/swaps // Return the ongoing swap requests
-- GET    /v1/swaps/{id} // Get a specific swap by id
-- POST   /v1/swaps // Initiates a new swap request
-- POST   /v1/swaps/{id}/accept // Accepts a swap request
-- POST   /v1/swaps/{id}/reject // Rejects a swap request
-- DELETE /v1/swaps/{id} // Ends an instrument swap
+#### Get the ongoing swaps
+GET `/v1/swaps`
+
+Returns the ongoing swaps of the authenticated user. Requires authentication.
+
+Example
+```
+GET /v1/swaps
+Authorization: Bearer <YOUR TOKEN>
+```
+The response body will contain a list of the requested swaps.
+
+#### Get a specific swap
+GET `/v1/swaps/{id}`
+
+Returns the details of the given swap. Requires authentication. The given swap id should belong to the authenticated user.
+
+Example
+```
+GET /v1/swaps/1
+Authorization: Bearer <YOUR TOKEN>
+```
+The response body will contain the details of the requested swap.
+
+#### Create a new swap request
+POST `/v1/swaps`
+
+Creates a new swap request. Requires authentication.
+
+The request body needs to be in JSON format. The requester_instrument_id must belong to the authenticated user. You can use the following properties:
+ - `requester_instrument_id` - int - Required
+ - `recipient_instrument_id` - int - Required
+
+Example
+```
+POST /v1/swaps
+Authorization: Bearer <YOUR TOKEN>
+
+{
+  "requester_instrument_id": 1210,
+  "recipient_instrument_id": 4
+}
+```
+The response body will contain the details of the newly created swap.
+
+#### Modify the state of a swap
+PATCH `/v1/swaps/{id}`
+
+Modifies the state of the given swap swap. Requires authentication.
+
+The request body needs to be in JSON format and should contain can use the desired state for the swap with the following property:
+- `status` - string - Required
+  - possibel values: `accepted`, `rejected`, `ended`
+
+Possible state changes:
+  - A newly created swap can be accepted or rejected. Only the recipient user can accept or reject a swap.
+  - An accepted swap can be ended. Both the requester user and the recipient user can end a swap.
+
+Example
+```
+PATCH /v1/swaps/1
+Authorization: Bearer <YOUR TOKEN>
+
+{
+  "status": "ended"
+}
+```
+
+The response body will contain the details of the updated swap.
 
 - POST   /v1/token // Return a new Access Token + Refresh Token
 - POST   /v1/token/refresh // Return a new Access Token

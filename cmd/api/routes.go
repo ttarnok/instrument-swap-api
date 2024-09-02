@@ -12,9 +12,9 @@ func (app *application) routes() http.Handler {
 
 	mux.HandleFunc("GET /v1/users", app.listUsersHandler)
 	mux.HandleFunc("POST /v1/users", app.registerUserHandler)
-	mux.HandleFunc("PUT /v1/users/{id}/password", app.requireMatchingUserIDs(app.updatePasswordHandler))
-	mux.HandleFunc("PUT /v1/users/{id}", app.requireMatchingUserIDs(app.updateUserHandler))
-	mux.HandleFunc("DELETE /v1/users/{id}", app.requireMatchingUserIDs(app.deleteUserHandler))
+	mux.HandleFunc("PUT /v1/users/{id}/password", app.requireActivatedUser(app.requireMatchingUserIDs(app.updatePasswordHandler)))
+	mux.HandleFunc("PUT /v1/users/{id}", app.requireActivatedUser(app.requireMatchingUserIDs(app.updateUserHandler)))
+	mux.HandleFunc("DELETE /v1/users/{id}", app.requireActivatedUser(app.requireMatchingUserIDs(app.deleteUserHandler)))
 
 	mux.HandleFunc("POST /v1/token", app.loginHandler)
 	mux.HandleFunc("POST /v1/token/refresh", app.refreshHandler)

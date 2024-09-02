@@ -1,8 +1,11 @@
 # instrument-swap-api
 
 A backend service which implements the necessary endpoints for a frontend
-that provides functionality for musicians to swap each other's instruments.\
+that provides functionality for musicians to swap each other's instruments.
+
 This is a personal project to learn Go by building a hands-on example application.
+
+The application uses a Postgres database to store data and a Redis database to help JWT token support.
 
 ## Dependencies
 
@@ -53,11 +56,84 @@ For a convenient development experience you can use a ```.env``` file in the pro
 - **REDIS_DB**
 
 ### API endpoints
-- GET    /v1/users // Show detailed list of users
-- POST   /v1/users // Register a new user
-- PUT    /v1/users/{id} // Update a user
-- DELETE /v1/users/{id} // Delete a user
-- PUT    /v1/users/password // Update the password of the user
+
+#### List users
+GET `/v1/users`
+
+Returns a detailed list of the registered users.
+
+#### Register a new user
+POST `/v1/users`
+
+Allows you to restister a new user.
+
+The request body needs to be in JSON format and includes the following properties:
+ - `name` - string - Required
+ - `email` - string - Required
+ - `password` - string - Required
+
+Example
+```
+POST /v1/users
+
+{
+  "name": "John Doe",
+  "email": "johndoe@example.com",
+  "password": "secret"
+}
+```
+The response body will contain the user details of the registered user.
+
+#### Update an existing user
+PUT `/v1/users/{id}`
+
+Allows you to update an existing user. Requires authentication, the given user id in the url path should match the user id specified in the JTW Access Token claim.
+
+The request body needs to be in JSON format and includes the user fields that need to be modified:
+ - `name` - string
+ - `email` - string
+
+Example
+```
+PUT /v1/users/1
+Authorization: Bearer <YOUR TOKEN>
+
+{
+  "name": "John Johnson"
+}
+```
+The response body will contain the user details of the updated user.
+
+#### Delete an existing user
+DELETE `/v1/users/{id}`
+
+Allows you to delete an user. Requires authentication, the given user id in the url path should match the user id specified in the JTW Access Token claim.
+
+Example
+```
+DELETE /v1/users/1
+Authorization: Bearer <YOUR TOKEN>
+```
+
+#### Update the password of a user
+PUT `/v1/users/{id}/password`
+
+Allows you to update the password of an existing user. Requires authentication, the given user id in the url path should match the user id specified in the JTW Access Token claim.
+
+The request body needs to be in JSON format and includes the old and the new password for the user:
+ - `password` - string - Required
+ - `new_password` - string - Required
+
+Example
+```
+PUT /v1/users/{id}/password
+Authorization: Bearer <YOUR TOKEN>
+
+{
+  "password": "oldpassword",
+  "new_password": "newpassword"
+}
+```
 
 - GET    /v1/instruments // Show detailed list of instruments (pagination)
 - POST   /v1/instruments // Create a new instrument

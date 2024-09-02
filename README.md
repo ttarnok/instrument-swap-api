@@ -99,7 +99,7 @@ PUT /v1/users/1
 Authorization: Bearer <YOUR TOKEN>
 
 {
-  "name": "John Johnson"
+  "name": "John Smith"
 }
 ```
 The response body will contain the user details of the updated user.
@@ -135,11 +135,136 @@ Authorization: Bearer <YOUR TOKEN>
 }
 ```
 
-- GET    /v1/instruments // Show detailed list of instruments (pagination)
-- POST   /v1/instruments // Create a new instrument
-- GET    /v1/instruments/{id} // Show the details of a specific instrument
-- PATCH  /v1/instruments/{id} // Update a specific instrument
-- DELETE /v1/instruments/{id} // Delete a specific instrument
+#### Show detailed list of instruments
+GET `/v1/instruments`
+
+Returns a detailed list of the instrumets. Requires authentication.
+
+The request url can have the following query params:
+- `name` - to query instruments with a specific name
+- `manufacturer` - to query instruments with a specific manufacturer
+- `famous_owners` - to query instruments with a specific famous owner
+- `owner_user_id` - to query instruments with a specific owner user id
+- `page` - to get the nth page of the result
+- `page_size` - to specify how many instruments should be on a result page
+- `sort` - to specify an attribute that we want to base the ordering of the result on
+  - Possinble values: `id`, `name`, `manufacturer`, `type`, `manufacture_year`, `estimated_value`, `owner_user_id`, `-id`, `-name`, `-manufacturer`, `-type`, `-manufacture_year`, `-estimated_value`, `-owner_user_id`
+  - Values starting with hyphen represents descending order, otherwise the ordering will be ascending
+
+Example 1
+```
+GET /v1/instruments?sort=-name
+Authorization: Bearer <YOUR TOKEN>
+```
+
+Example 2
+```
+GET /v1/instruments?page_size=2&page=2
+Authorization: Bearer <YOUR TOKEN>
+```
+
+Example 3
+```
+GET /v1/instruments?page_size=1&page=10&sort=manufacturer
+Authorization: Bearer <YOUR TOKEN>
+```
+
+The response body will contain the list of the queried instruments and pagination related metadata information.
+
+The returned metadata information contains:
+- `current_page` - the current page index
+- `page_size` - the page size
+- `first_page` - the index of the first page
+- `last_page` - the index of the last page
+- `total_records` - the total number of instruments on all the pages
+
+#### Create a new instrument
+POST `/v1/instruments`
+
+Allows you the create a new instrument. Requires authentication.
+
+The request body needs to be in JSON format and includes the user fields that need to be modified:
+ - `name` - string - Required
+ - `manufacturer` - string - Required
+ - `manufacture_year` - int - Required
+ - `type` - string - Required
+   - accepted values: `synthesizer`, `guitar`
+ - `estimated_value` - int - Required
+ - `condition` - string - Required
+ - `description` - string - Required
+ - `famous_owners` - []string - Required
+
+Example
+```
+POST /v1/instruments
+Authorization: Bearer <YOUR TOKEN>
+
+{
+  "name": "Instrument name",
+  "manufacturer": "Famous company",
+  "manufacture_year": 1990,
+  "type": "guitar",
+  "estimated_value": 10000,
+  "condition": "outstanding",
+  "description": "Here comes the description...",
+  "famous_owners": ["Band name 1", "Band name 2"]
+}
+```
+
+The response body will contain the details of the newly created instrument.
+
+#### Get the attributes of the specified instrument
+GET `/v1/instruments/{id}`
+
+Allows you to view an existing intsrument. Requires authentication.
+
+Example
+```
+GET /v1/instruments/1
+Authorization: Bearer <YOUR TOKEN>
+```
+
+The response body will contain the details of the instrument with the given instrument id.
+
+#### Update an existing instrument
+PATCH `/v1/instruments/{id}`
+
+Allows you to update an existing instrument. Requires authentication, the given instrument id in the url path should match to an instrument with an owner user id specified in the JTW Access Token claim.
+
+The request body needs to be in JSON format and includes the instrument fields that need to be modified:
+- `name` - string
+- `manufacturer` - string
+- `manufacture_year` - int
+- `type` - string
+  - accepted values: `synthesizer`, `guitar`
+- `estimated_value` - int
+- `condition` - string
+- `description` - string
+- `famous_owners` - []string
+
+Example
+```
+PATCH /v1/instruments/1
+Authorization: Bearer <YOUR TOKEN>
+
+{
+  "name": "Updated Instrument name",
+  "condition": "good"
+}
+```
+The response body will contain the details of the newly updated instrument.
+
+#### Delete an instrument
+DELETE `/v1/instruments/{id}`
+
+Deletes the instrument with the specified instrument id. Requires authentication, the given instrument id in the url path should match to an instrument with an owner user id specified in the JTW Access Token claim. Instrument with an ongoing swap cannotbe deleted.
+
+Example
+```
+
+DELETE /v1/instruments/1
+Authorization: Bearer <YOUR TOKEN>
+```
 
 - GET    /v1/swaps // Return the ongoing swap requests
 - GET    /v1/swaps/{id} // Get a specific swap by id

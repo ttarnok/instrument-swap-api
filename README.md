@@ -27,6 +27,31 @@ To set up a development environment, please go through the following steps:
 
 Running the application with the ```--help``` or ```-h``` flags will display the possible command-line options and exit.
 
+Command line options for the application (If a value is not set explicitly, the default value will be set, if there is any.):
+- **help:** discard the other given flags, display the possible command-line options and exit.
+- **version:** discard the other given flags, display the version of the application and exit.
+- **environment:** the running environment with the possible values of dev, test or prod (default value is dev)
+- **port:** API server port (default value is 4000)
+- **db-dsn:** dsn for the used Postgres database in the format of "postgres://username:password@host/database?params" (there is no default value)
+- **db-max-open-conns:** maximum number of open database connections for the Postgres database. (default value is 25)
+- **db-max-idle-conns:** maximum number of idle database connections for the Postgres database. (default value is 25)
+- **db-max-idle-time:** maximum connection idle timein nanoseconds for the Postgres database. (default value is 15 minutes)
+- **limiter-rps:** maximum requests per second for the rate limiter (default value is 2)
+- **limiter-burst:** maximum burst for rate limiter (default value is 4)
+- **limiter-enabled:** a boolean value to enable or disable the limiter. (default value is true)
+- **jwt-secret:** the secret for jwt token creation and signature verification.
+- **redis-address:** the address of the used redis database in the form of host:port (there is no default value)
+- **redis-password:** the password for redis (the default value is empty string)
+- **redis-db:** the number of the used redis database (default value is 0)
+
+For a convenient development experience you can use a ```.env``` file in the process root folder to set the following environment variables (makefile expects these variables to be set):
+- **INSTRUMENT_SWAP_API_PORT**
+- **INSTRUMENT_SWAP_DB_DSN**
+- **JWT_SECRET**
+- **REDIS_ADDR**
+- **REDIS_PASSWORD**
+- **REDIS_DB**
+
 ### API endpoints
 - GET    /v1/users // Show detailed list of users
 - POST   /v1/users // Register a new user

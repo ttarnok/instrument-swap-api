@@ -52,7 +52,7 @@ func (suite *MainTestSuite) SetupSuite() {
 	//setting up the test application
 	var cfg config
 
-	cfg.env = "teszt"
+	cfg.env = "test"
 	cfg.db.dsn = suite.pgContainer.ConnectionString
 	cfg.db.maxIdleConns = 25
 	cfg.db.maxOpenConns = 25
@@ -107,7 +107,7 @@ func (suite *MainTestSuite) TestHealthCheck() {
 
 	expectedRespBody := make(map[string]map[string]string)
 	expectedRespBody["liveliness"] = make(map[string]string)
-	expectedRespBody["liveliness"]["environment"] = "teszt"
+	expectedRespBody["liveliness"]["environment"] = "test"
 	expectedRespBody["liveliness"]["status"] = "available"
 	expectedRespBody["liveliness"]["version"] = "-"
 

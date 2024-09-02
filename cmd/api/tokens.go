@@ -180,7 +180,14 @@ func (app *application) refreshHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusCreated, envelope{"access": string(jwtBytesAccess)}, nil)
+	// Generate new refresh token.
+	jwtBytesRefresh, err := app.auth.RefreshToken.NewToken(user.ID)
+	if err != nil {
+		app.serverErrorLogResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusCreated, envelope{"access": string(jwtBytesAccess), "refresh": string(jwtBytesRefresh)}, nil)
 	if err != nil {
 		app.serverErrorLogResponse(w, r, err)
 		return

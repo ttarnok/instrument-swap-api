@@ -96,7 +96,7 @@ The request body needs to be in JSON format and includes the user properties tha
 Example
 ```
 PUT /v1/users/1
-Authorization: Bearer <YOUR TOKEN>
+Authorization: Bearer <YOUR ACCESS TOKEN>
 
 {
   "name": "John Smith"
@@ -112,7 +112,7 @@ Allows you to delete an user. Requires authentication, the given user id in the 
 Example
 ```
 DELETE /v1/users/1
-Authorization: Bearer <YOUR TOKEN>
+Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 
 #### Update the password of a user
@@ -127,7 +127,7 @@ The request body needs to be in JSON format and includes the old and the new pas
 Example
 ```
 PUT /v1/users/{id}/password
-Authorization: Bearer <YOUR TOKEN>
+Authorization: Bearer <YOUR ACCESS TOKEN>
 
 {
   "password": "oldpassword",
@@ -154,19 +154,19 @@ The request url can have the following query params:
 Example 1
 ```
 GET /v1/instruments?sort=-name
-Authorization: Bearer <YOUR TOKEN>
+Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 
 Example 2
 ```
 GET /v1/instruments?page_size=2&page=2
-Authorization: Bearer <YOUR TOKEN>
+Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 
 Example 3
 ```
 GET /v1/instruments?page_size=1&page=10&sort=manufacturer
-Authorization: Bearer <YOUR TOKEN>
+Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 
 The response body will contain the list of the queried instruments and pagination related metadata information.
@@ -197,7 +197,7 @@ The request body needs to be in JSON format and includes the user properties tha
 Example
 ```
 POST /v1/instruments
-Authorization: Bearer <YOUR TOKEN>
+Authorization: Bearer <YOUR ACCESS TOKEN>
 
 {
   "name": "Instrument name",
@@ -221,7 +221,7 @@ Allows you to view an existing intsrument. Requires authentication.
 Example
 ```
 GET /v1/instruments/1
-Authorization: Bearer <YOUR TOKEN>
+Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 
 The response body will contain the details of the instrument with the given instrument id.
@@ -245,7 +245,7 @@ The request body needs to be in JSON format and includes the instrument properti
 Example
 ```
 PATCH /v1/instruments/1
-Authorization: Bearer <YOUR TOKEN>
+Authorization: Bearer <YOUR ACCESS TOKEN>
 
 {
   "name": "Updated Instrument name",
@@ -262,7 +262,7 @@ Deletes the instrument with the specified instrument id. Requires authentication
 Example
 ```
 DELETE /v1/instruments/1
-Authorization: Bearer <YOUR TOKEN>
+Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 
 #### Get the ongoing swaps
@@ -273,7 +273,7 @@ Returns the ongoing swaps of the authenticated user. Requires authentication.
 Example
 ```
 GET /v1/swaps
-Authorization: Bearer <YOUR TOKEN>
+Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 The response body will contain a list of the requested swaps.
 
@@ -285,7 +285,7 @@ Returns the details of the given swap. Requires authentication. The given swap i
 Example
 ```
 GET /v1/swaps/1
-Authorization: Bearer <YOUR TOKEN>
+Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 The response body will contain the details of the requested swap.
 
@@ -301,7 +301,7 @@ The request body needs to be in JSON format. The requester_instrument_id must be
 Example
 ```
 POST /v1/swaps
-Authorization: Bearer <YOUR TOKEN>
+Authorization: Bearer <YOUR ACCESS TOKEN>
 
 {
   "requester_instrument_id": 1210,
@@ -326,7 +326,7 @@ Possible state changes:
 Example
 ```
 PATCH /v1/swaps/1
-Authorization: Bearer <YOUR TOKEN>
+Authorization: Bearer <YOUR ACCESS TOKEN>
 
 {
   "status": "ended"
@@ -335,10 +335,84 @@ Authorization: Bearer <YOUR TOKEN>
 
 The response body will contain the details of the updated swap.
 
-- POST   /v1/token // Return a new Access Token + Refresh Token
-- POST   /v1/token/refresh // Return a new Access Token
-- POST   /v1/token/blacklist // Blacklists a refresh token
+#### Log in the user, create a new Access and Refresh JWT Token pair
+POST `/v1/token`
+
+Logs in the user and returns the Access and Refresh tokens for the authentication of the logged in user.
+
+The request body needs to be in JSON format and should contain the following user cretentials to log in:
+- `email` - string - Required
+- `password` - string - Required
+
+Example
+```
+POST /v1/token
+
+{
+  "email": "johnsmith@example.com",
+  "password": "mysecretpassword123"
+}
+```
+The response body will contain the Access and Refresh Tokens.
+- Access Tokens expires in 5 minutes.
+- Refresh Tokens expires in 24 hours.
+
+#### Return a new Access Token
+POST `/v1/token/refresh`
+
+If we have an expired Access Token and a non expired Refresh Token, we can get a new Access Token and a new Refresh Token.
+
+The request body needs to be in JSON format and should contain the following properties:
+- `access` - string - Required
+- `refresh` - string - Required
+
+Example
+```
+POST /v1/token
+
+{
+  "access": "asdsadasfwft43r2wrffwf",
+  "refresh": "sd,afkucghqwelf,kuabw.fKHJBDFLauzvf"
+}
+```
+The response body will contain the newly created Access and Refresh Tokens. The old Access and Refresh Tokens can not used anymore.
+
+#### Invalidate a refresh token
+POST `/v1/token/blacklist`
+
+Invalidates the given Refresh Token, which is cannot be used anymore.
+
+The request body needs to be in JSON format and should contain the Refresh Token to invalidate:
+- `refresh` - string - Required
+
+Example
+```
+POST /v1/token/blacklist
+
+{
+  "refresh": "sd,afkucghqwelf,kuabw.fKHJBDFLauzvf"
+}
+```
+
 - POST   /v1/token/logout // Blacklists the given access and refresh tokens
+#### Logout the user, with token invalidation
+POST `/v1/token/logout`
+
+Logs out the  user with the given Access and Refresh Tokens. Invalidates both tokens.
+
+The request body needs to be in JSON format and should contain the following properties:
+- `access` - string - Required
+- `refresh` - string - Required
+
+Example
+```
+POST /v1/token/logout
+
+{
+  "access": "asdsadasfwft43r2wrffwf",
+  "refresh": "sd,afkucghqwelf,kuabw.fKHJBDFLauzvf"
+}
+```
 
 - GET    /v1/liveliness
 

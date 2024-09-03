@@ -32,6 +32,8 @@ func ValidateSwap(v *validator.Validator, swap *Swap) {
 
 	v.Check(swap.RecipientInstrumentID != 0, "recipient_instrument_id", "must not be empty")
 	v.Check(swap.RecipientInstrumentID >= 0, "recipient_instrument_id", "must be greater than 0")
+
+	v.Check(swap.RecipientInstrumentID != swap.RequesterInstrumentID, "requester_instrument_id", "requester and recipient instruments must be different")
 }
 
 // SwapModel represents the database layer and provides functionality to interact with the database.

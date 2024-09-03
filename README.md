@@ -48,12 +48,15 @@ Command line options for the application (If a value is not set explicitly, the 
 - **redis-db:** the number of the used redis database (default value is 0)
 
 For a convenient development experience you can use a ```.env``` file in the process root folder to set the following environment variables (makefile expects these variables to be set):
-- **INSTRUMENT_SWAP_API_PORT**
-- **INSTRUMENT_SWAP_DB_DSN**
-- **JWT_SECRET**
-- **REDIS_ADDR**
-- **REDIS_PASSWORD**
-- **REDIS_DB**
+
+- **REDIS_ADDR:** address for the redis instance that serves the application (used by the application to connect to Redis); format: database_name:port
+- **REDIS_PASSWORD:** password for the redis instance that serves the application (used by the application to connect to Redis) (for development, empty password is fine)
+- **REDIS_DB:** database index for the redis instance that serves the application (used by the application to connect to Redis) (for development 0 is fine)
+- **POSTGRES_USER:** database user for the postgres database that serves the application (used by Docker when creating the database)
+- **POSTGRES_PASSWORD:** password for the database user for the postgres database that serves the application (used by Docker when creating the database)
+- **INSTRUMENT_SWAP_API_PORT:** the port for the application endpoint (used by the application)
+- **INSTRUMENT_SWAP_DB_DSN:** the dsn for the postgres database that serves the application (used by the application to connect to the Postgres database)
+- **JWT_SECRET:** secret for jwt support (used by the application)
 
 ## API endpoints
 
@@ -434,16 +437,6 @@ Displays apprication metrics. In production applications this endpoint should be
 Example
 ```
 GET  /debug/vars
-```
-
-### Display debug infos
-GET `/debug/pprof`
-
-Displays debug infos. In production applications this endpoint should be protected.
-
-Example
-```
-GET  /debug/pprof
 ```
 
 ## Release milestones

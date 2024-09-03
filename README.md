@@ -85,7 +85,7 @@ POST /v1/users
 The response body will contain the user details of the registered user.
 
 #### Update an existing user
-PUT `/v1/users/{id}`
+PATCH `/v1/users/{id}`
 
 Allows you to update an existing user. Requires authentication, the given user id in the url path should match the user id specified in the JTW Access Token claim.
 
@@ -95,7 +95,7 @@ The request body needs to be in JSON format and includes the user properties tha
 
 Example
 ```
-PUT /v1/users/1
+PATCH /v1/users/1
 Authorization: Bearer <YOUR ACCESS TOKEN>
 
 {
@@ -140,7 +140,7 @@ GET `/v1/instruments`
 
 Returns a detailed list of the instrumets. Requires authentication.
 
-The request url can have the following query params:
+Optional query parameters:
 - `name` - to query instruments with a specific name
 - `manufacturer` - to query instruments with a specific manufacturer
 - `famous_owners` - to query instruments with a specific famous owner

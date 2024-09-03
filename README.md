@@ -55,14 +55,14 @@ For a convenient development experience you can use a ```.env``` file in the pro
 - **REDIS_PASSWORD**
 - **REDIS_DB**
 
-### API endpoints
+## API endpoints
 
-#### List users
+### List users
 GET `/v1/users`
 
 Returns a detailed list of the registered users.
 
-#### Register a new user
+### Register a new user
 POST `/v1/users`
 
 Allows you to restister a new user.
@@ -84,7 +84,7 @@ POST /v1/users
 ```
 The response body will contain the user details of the registered user.
 
-#### Update an existing user
+### Update an existing user
 PATCH `/v1/users/{id}`
 
 Allows you to update an existing user. Requires authentication, the given user id in the url path should match the user id specified in the JTW Access Token claim.
@@ -104,7 +104,7 @@ Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 The response body will contain the user details of the updated user.
 
-#### Delete an existing user
+### Delete an existing user
 DELETE `/v1/users/{id}`
 
 Allows you to delete an user. Requires authentication, the given user id in the url path should match the user id specified in the JTW Access Token claim.
@@ -115,7 +115,7 @@ DELETE /v1/users/1
 Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 
-#### Update the password of a user
+### Update the password of a user
 PUT `/v1/users/{id}/password`
 
 Allows you to update the password of an existing user. Requires authentication, the given user id in the url path should match the user id specified in the JTW Access Token claim.
@@ -135,7 +135,7 @@ Authorization: Bearer <YOUR ACCESS TOKEN>
 }
 ```
 
-#### Show detailed list of instruments
+### Show detailed list of instruments
 GET `/v1/instruments`
 
 Returns a detailed list of the instrumets. Requires authentication.
@@ -178,7 +178,7 @@ The returned metadata information contains:
 - `last_page` - the index of the last page
 - `total_records` - the total number of instruments on all the pages
 
-#### Create a new instrument
+### Create a new instrument
 POST `/v1/instruments`
 
 Allows you the create a new instrument. Requires authentication.
@@ -213,7 +213,7 @@ Authorization: Bearer <YOUR ACCESS TOKEN>
 
 The response body will contain the details of the newly created instrument.
 
-#### Get the attributes of the specified instrument
+### Get the attributes of the specified instrument
 GET `/v1/instruments/{id}`
 
 Allows you to view an existing intsrument. Requires authentication.
@@ -226,7 +226,7 @@ Authorization: Bearer <YOUR ACCESS TOKEN>
 
 The response body will contain the details of the instrument with the given instrument id.
 
-#### Update an existing instrument
+### Update an existing instrument
 PATCH `/v1/instruments/{id}`
 
 Allows you to update an existing instrument. Requires authentication, the given instrument id in the url path should match to an instrument with an owner user id specified in the JTW Access Token claim.
@@ -254,7 +254,7 @@ Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 The response body will contain the details of the newly updated instrument.
 
-#### Delete an instrument
+### Delete an instrument
 DELETE `/v1/instruments/{id}`
 
 Deletes the instrument with the specified instrument id. Requires authentication, the given instrument id in the url path should match to an instrument with an owner user id specified in the JTW Access Token claim. Instrument with an ongoing swap cannotbe deleted.
@@ -265,7 +265,7 @@ DELETE /v1/instruments/1
 Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 
-#### Get the ongoing swaps
+### Get the ongoing swaps
 GET `/v1/swaps`
 
 Returns the ongoing swaps of the authenticated user. Requires authentication.
@@ -277,7 +277,7 @@ Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 The response body will contain a list of the requested swaps.
 
-#### Get a specific swap
+### Get a specific swap
 GET `/v1/swaps/{id}`
 
 Returns the details of the given swap. Requires authentication. The given swap id should belong to the authenticated user.
@@ -289,7 +289,7 @@ Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 The response body will contain the details of the requested swap.
 
-#### Create a new swap request
+### Create a new swap request
 POST `/v1/swaps`
 
 Creates a new swap request. Requires authentication.
@@ -310,7 +310,7 @@ Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 The response body will contain the details of the newly created swap.
 
-#### Modify the state of a swap
+### Modify the state of a swap
 PATCH `/v1/swaps/{id}`
 
 Modifies the state of the given swap swap. Requires authentication.
@@ -335,7 +335,7 @@ Authorization: Bearer <YOUR ACCESS TOKEN>
 
 The response body will contain the details of the updated swap.
 
-#### Log in the user, create a new Access and Refresh JWT Token pair
+### Log in the user, create a new Access and Refresh JWT Token pair
 POST `/v1/token`
 
 Logs in the user and returns the Access and Refresh tokens for the authentication of the logged in user.
@@ -357,7 +357,7 @@ The response body will contain the Access and Refresh Tokens.
 - Access Tokens expires in 5 minutes.
 - Refresh Tokens expires in 24 hours.
 
-#### Return a new Access Token
+### Return a new Access Token
 POST `/v1/token/refresh`
 
 If we have an expired Access Token and a non expired Refresh Token, we can get a new Access Token and a new Refresh Token.
@@ -377,7 +377,7 @@ POST /v1/token
 ```
 The response body will contain the newly created Access and Refresh Tokens. The old Access and Refresh Tokens can not used anymore.
 
-#### Invalidate a refresh token
+### Invalidate a refresh token
 POST `/v1/token/blacklist`
 
 Invalidates the given Refresh Token, which is cannot be used anymore.
@@ -395,7 +395,7 @@ POST /v1/token/blacklist
 ```
 
 - POST   /v1/token/logout // Blacklists the given access and refresh tokens
-#### Logout the user, with token invalidation
+### Logout the user, with token invalidation
 POST `/v1/token/logout`
 
 Logs out the  user with the given Access and Refresh Tokens. Invalidates both tokens.
@@ -414,10 +414,37 @@ POST /v1/token/logout
 }
 ```
 
-- GET    /v1/liveliness
+### Get Application status
+GET `/v1/liveliness`
 
-- GET    /debug/vars // Display apprication metrics
-- GET    /debug/pprof // Display debug infos
+Returns the status of the application. This is not a readiness endpoint.
+
+Example
+```
+GET  /v1/liveliness
+```
+
+The response body will contain the state, the environment and the version of the application.
+
+### Display apprication metrics
+GET `/debug/vars`
+
+Displays apprication metrics. In production applications this endpoint should be protected.
+
+Example
+```
+GET  /debug/vars
+```
+
+### Display debug infos
+GET `/debug/pprof`
+
+Displays debug infos. In production applications this endpoint should be protected.
+
+Example
+```
+GET  /debug/pprof
+```
 
 ## Release milestones
 

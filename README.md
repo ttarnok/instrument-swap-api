@@ -107,17 +107,6 @@ Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 The response body will contain the user details of the updated user.
 
-### Delete an existing user
-DELETE `/v1/users/{id}`
-
-Allows you to delete an user. Requires authentication, the given user id in the url path should match the user id specified in the JTW Access Token claim.
-
-Example
-```
-DELETE /v1/users/1
-Authorization: Bearer <YOUR ACCESS TOKEN>
-```
-
 ### Update the password of a user
 PUT `/v1/users/{id}/password`
 
@@ -138,7 +127,18 @@ Authorization: Bearer <YOUR ACCESS TOKEN>
 }
 ```
 
-### Show detailed list of instruments
+### Delete an existing user
+DELETE `/v1/users/{id}`
+
+Allows you to delete an user. Requires authentication, the given user id in the url path should match the user id specified in the JTW Access Token claim.
+
+Example
+```
+DELETE /v1/users/1
+Authorization: Bearer <YOUR ACCESS TOKEN>
+```
+
+### Show the list of instruments
 GET `/v1/instruments`
 
 Returns a detailed list of the instrumets. Requires authentication.
@@ -181,6 +181,19 @@ The returned metadata information contains:
 - `last_page` - the index of the last page
 - `total_records` - the total number of instruments on all the pages
 
+### Get the attributes of the specified instrument
+GET `/v1/instruments/{id}`
+
+Allows you to view an existing intsrument. Requires authentication.
+
+Example
+```
+GET /v1/instruments/1
+Authorization: Bearer <YOUR ACCESS TOKEN>
+```
+
+The response body will contain the details of the instrument with the given instrument id.
+
 ### Create a new instrument
 POST `/v1/instruments`
 
@@ -215,19 +228,6 @@ Authorization: Bearer <YOUR ACCESS TOKEN>
 ```
 
 The response body will contain the details of the newly created instrument.
-
-### Get the attributes of the specified instrument
-GET `/v1/instruments/{id}`
-
-Allows you to view an existing intsrument. Requires authentication.
-
-Example
-```
-GET /v1/instruments/1
-Authorization: Bearer <YOUR ACCESS TOKEN>
-```
-
-The response body will contain the details of the instrument with the given instrument id.
 
 ### Update an existing instrument
 PATCH `/v1/instruments/{id}`

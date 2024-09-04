@@ -26,6 +26,10 @@ To set up a development environment, please go through the following steps:
 4. Clone the project code from GitHub.
 5. To see development options, run ```make help``` from the project's root directory.
 
+To run the application in a local development environment make sure the necessary environment variables are set then ```make docker/compose/up``` and then ```make docker/logs``` is a good starting point.
+
+There is a `/postman` folder in the project root which contains an exported [Postman](https://www.postman.com) collection where you can try the provided API endpoints in action. Before you run the collection, please make sure the baseURL Collection variable is set properly according to the current application URL.
+
 ## Usage
 
 Running the application with the ```--help``` or ```-h``` flags will display the possible command-line options and exit.
@@ -463,12 +467,12 @@ GET  /debug/vars
 - Make sure the api is not leaking implementation details. Make sure the error responses does not leaking implementation details:
   - Only return standars uniform errors. (safe errors)
   - In case of nonstandard errors return internal server error. (non safe errors)
-- Implement better metrics gathering. [prometheus](https://prometheus.io) or [datadog](https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/go/). For local development, here is a terminal based monitoring solution: [exvarmon](https://github.com/divan/expvarmon).
-- Implement a basic CI/CD pipeline via [GitHub Actions](https://docs.github.com/en/actions) or [Jenkins](https://www.jenkins.io), and deploy it to aws.
+- Implement better metrics gathering. Consider [prometheus](https://prometheus.io) or [datadog](https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/go/). For local development, here is a terminal based monitoring solution: [exvarmon](https://github.com/divan/expvarmon).
+- Implement a basic CI/CD pipeline via [GitHub Actions](https://docs.github.com/en/actions) or [Jenkins](https://www.jenkins.io), and deploy the application to aws.
 - Use [golang-jwt](github.com/golang-jwt/jwt) to handle jwt-s.
 - Support to use multiple secrets for jwt-s. Consider using a keystore to load the secrets from.
   - Implement the key id claim, so we will know which key was used to sign the token.
 - Refactor the application to use [Kubernetes](https://kubernetes.io).
   - Consider using [Kind](https://kind.sigs.k8s.io) or [Minikube](https://minikube.sigs.k8s.io/docs/) to run a local development cluster.
-  - Consider using [kustomize](https://github.com/kubernetes-sigs/kustomize) to simplify yaml files.
+  - Consider using [kustomize](https://github.com/kubernetes-sigs/kustomize) to simplify Kubernetes related yaml files.
 - Consider refactoring into Microservices architecture.

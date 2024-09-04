@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
-    entrypoint: ./api -port=${INSTRUMENT_SWAP_API_PORT} -db-dsn=${INSTRUMENT_SWAP_DB_DSN} -jwt-secret=${JWT_SECRET} -redis-address=${REDIS_ADDR} -redis-password=${REDIS_PASSWORD} -redis-db=${REDIS_DB}
+    entrypoint: ./api -port=${INSTRUMENT_SWAP_API_PORT} -db-dsn=${INSTRUMENT_SWAP_DB_DSN} -jwt-secret=${JWT_SECRET} -redis-address=${REDIS_ADDR} -redis-password=${REDIS_PASSWORD} -redis-db=${REDIS_DB} -limiter-burst=40
     ports:
       - "127.0.0.1:4000:4000"
     networks:

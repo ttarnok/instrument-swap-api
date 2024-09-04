@@ -1,0 +1,1168 @@
+{
+	"info": {
+		"_postman_id": "0768679c-e2af-45e1-b308-fe4c1ea58d64",
+		"name": "Instrument Swap API Collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "17972553"
+	},
+	"item": [
+		{
+			"name": "Get Application status",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/v1/liveliness",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"liveliness"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Register user 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"const user1Response = pm.response.json()",
+							"pm.collectionVariables.set(\"user1ID\", user1Response.user.id);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.collectionVariables.set(\"user1Email\", pm.variables.replaceIn(\"{{$randomEmail}}\"));",
+							"pm.collectionVariables.set(\"user1Pass\", pm.variables.replaceIn(\"{{$randomPassword}}\"));",
+							"",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"{{$randomFullName}}\",\n  \"email\": \"{{user1Email}}\",\n  \"password\": \"{{user1Pass}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/users",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Register user 2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"const user2Response = pm.response.json()",
+							"pm.collectionVariables.set(\"user2ID\", user2Response.user.id);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"pm.collectionVariables.set(\"user2Email\", pm.variables.replaceIn(\"{{$randomEmail}}\"));",
+							"pm.collectionVariables.set(\"user2Pass\", pm.variables.replaceIn(\"{{$randomPassword}}\"));"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"{{$randomFullName}}\",\n  \"email\": \"{{user2Email}}\",\n  \"password\": \"{{user2Pass}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/users",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List users",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/v1/users",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login user 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"const user1Response = pm.response.json()",
+							"pm.collectionVariables.set(\"user1AccessToken\", user1Response.access);",
+							"pm.collectionVariables.set(\"user1RefreshToken\", user1Response.refresh);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"{{user1Email}}\",\n  \"password\": \"{{user1Pass}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/token",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update user 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{user1AccessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"{{$randomFullName}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/users/:userID",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"users",
+						":userID"
+					],
+					"variable": [
+						{
+							"key": "userID",
+							"value": "{{user1ID}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update user 1 pass",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{user1AccessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"password\": \"{{user1Pass}}\",\n    \"new_password\": \"{{$randomPassword}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/users/:userID/password",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"users",
+						":userID",
+						"password"
+					],
+					"variable": [
+						{
+							"key": "userID",
+							"value": "{{user1ID}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create an instrument for user 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"const instrumentResponse = pm.response.json()",
+							"pm.collectionVariables.set(\"user1InstrumentID\", instrumentResponse.instrument.id);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{user1AccessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"{{$randomProductAdjective}}\",\n  \"manufacturer\": \"{{$randomCompanyName}}\",\n  \"manufacture_year\": 1990,\n  \"type\": \"guitar\",\n  \"estimated_value\": 10000,\n  \"condition\": \"outstanding\",\n  \"description\": \"Here comes the description...\",\n  \"famous_owners\": [\"Band name 1\", \"Band name 2\"]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/instruments",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"instruments"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Instruments",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{user1AccessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/v1/instruments",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"instruments"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get the instrument created for user 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{user1AccessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/instruments/:instrumentID",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"instruments",
+						":instrumentID"
+					],
+					"variable": [
+						{
+							"key": "instrumentID",
+							"value": "{{user1InstrumentID}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update the instrument created for user 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{user1AccessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"estimated_value\": 10,\n  \"condition\": \"poor\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/instruments/:instrumentID",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"instruments",
+						":instrumentID"
+					],
+					"variable": [
+						{
+							"key": "instrumentID",
+							"value": "{{user1InstrumentID}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login user 2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"const user2Response = pm.response.json()",
+							"pm.collectionVariables.set(\"user2AccessToken\", user2Response.access);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"packages": {},
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"{{user2Email}}\",\n  \"password\": \"{{user2Pass}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/token",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create an instrument for user 2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"const instrumentResponse = pm.response.json()",
+							"pm.collectionVariables.set(\"user2InstrumentID\", instrumentResponse.instrument.id);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{user2AccessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"{{$randomProductAdjective}}\",\n  \"manufacturer\": \"{{$randomCompanyName}}\",\n  \"manufacture_year\": 2000,\n  \"type\": \"guitar\",\n  \"estimated_value\": 100000,\n  \"condition\": \"excellent\",\n  \"description\": \"Here comes the description...\",\n  \"famous_owners\": [\"Band name 3\", \"Band name 4\", \"Band name 5\"]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/instruments",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"instruments"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create a swap by user 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"const swapResponse = pm.response.json()",
+							"pm.collectionVariables.set(\"swapID\", swapResponse.swap.id);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{user1AccessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"requester_instrument_id\": {{user1InstrumentID}},\n  \"recipient_instrument_id\": {{user2InstrumentID}}\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/swaps",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"swaps"
+					]
+				},
+				"description": "Create the swap of the two created instruments by user 1"
+			},
+			"response": []
+		},
+		{
+			"name": "Accept the swap by user 2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{user2AccessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"status\": \"accepted\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/swaps/:swapID",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"swaps",
+						":swapID"
+					],
+					"variable": [
+						{
+							"key": "swapID",
+							"value": "{{swapID}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "End the swap by user 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{user1AccessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"status\": \"ended\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/swaps/:swapID",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"swaps",
+						":swapID"
+					],
+					"variable": [
+						{
+							"key": "swapID",
+							"value": "{{swapID}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Logout user 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"access\": \"{{user1AccessToken}}\",\n  \"refresh\": \"{{user1RefreshToken}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/token/logout",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"token",
+						"logout"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create an instrument for user 1 - 401",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 401\", function () {",
+							"    pm.response.to.have.status(401);",
+							"});",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{user1AccessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"{{$randomProductAdjective}}\",\n  \"manufacturer\": \"{{$randomCompanyName}}\",\n  \"manufacture_year\": 1990,\n  \"type\": \"guitar\",\n  \"estimated_value\": 10000,\n  \"condition\": \"outstanding\",\n  \"description\": \"Here comes the description...\",\n  \"famous_owners\": [\"Band name 1\", \"Band name 2\"]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/instruments",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"instruments"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create an instrument for user 2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"const instrumentResponse = pm.response.json()",
+							"pm.collectionVariables.set(\"user2InstrumentID\", instrumentResponse.instrument.id);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{user2AccessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"{{$randomProductAdjective}}\",\n  \"manufacturer\": \"{{$randomCompanyName}}\",\n  \"manufacture_year\": 2000,\n  \"type\": \"synthesizer\",\n  \"estimated_value\": 100000,\n  \"condition\": \"excellent\",\n  \"description\": \"Here comes the description...\",\n  \"famous_owners\": [\"Band name 3\", \"Band name 4\", \"Band name 5\"]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/instruments",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"instruments"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete the newly created instrument for user 2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{user2AccessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/v1/instruments/:instrumentID",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"instruments",
+						":instrumentID"
+					],
+					"variable": [
+						{
+							"key": "instrumentID",
+							"value": "{{user2InstrumentID}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Application status",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/v1/liveliness",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"v1",
+						"liveliness"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseURL",
+			"value": "localhost:4000"
+		},
+		{
+			"key": "user1ID",
+			"value": ""
+		},
+		{
+			"key": "user1Email",
+			"value": ""
+		},
+		{
+			"key": "user1Pass",
+			"value": ""
+		},
+		{
+			"key": "user1AccessToken",
+			"value": ""
+		},
+		{
+			"key": "user1InstrumentID",
+			"value": ""
+		},
+		{
+			"key": "user2Email",
+			"value": ""
+		},
+		{
+			"key": "user2Pass",
+			"value": ""
+		},
+		{
+			"key": "user2ID",
+			"value": ""
+		},
+		{
+			"key": "user2AccessToken",
+			"value": ""
+		},
+		{
+			"key": "user2InstrumentID",
+			"value": ""
+		},
+		{
+			"key": "swapID",
+			"value": ""
+		},
+		{
+			"key": "user1RefreshToken",
+			"value": ""
+		},
+		{
+			"key": "user2Instrument2ID",
+			"value": ""
+		}
+	]
+}

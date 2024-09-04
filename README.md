@@ -42,7 +42,7 @@ Command line options for the application (If a value is not set explicitly, the 
 - **db-dsn:** dsn for the used Postgres database in the format of "postgres://username:password@host/database?params" (there is no default value)
 - **db-max-open-conns:** maximum number of open database connections for the Postgres database. (default value is 25)
 - **db-max-idle-conns:** maximum number of idle database connections for the Postgres database. (default value is 25)
-- **db-max-idle-time:** maximum connection idle timein nanoseconds for the Postgres database. (default value is 15 minutes)
+- **db-max-idle-time:** maximum connection idle time in nanoseconds for the Postgres database. (default value is 15 minutes)
 - **limiter-rps:** maximum requests per second for the rate limiter (default value is 2)
 - **limiter-burst:** maximum burst for rate limiter (default value is 4)
 - **limiter-enabled:** a boolean value to enable or disable the limiter. (default value is true)
@@ -72,7 +72,7 @@ Returns a detailed list of the registered users.
 ### Register a new user
 POST `/v1/users`
 
-Allows you to restister a new user.
+Allows you to register a new user.
 
 The request body needs to be in JSON format and includes the following properties:
  - `name` - string - Required
@@ -94,7 +94,7 @@ The response body will contain the user details of the registered user.
 ### Update an existing user
 PATCH `/v1/users/{id}`
 
-Allows you to update an existing user. Requires authentication, the given user id in the url path should match the user id specified in the JTW Access Token claim.
+Allows you to update an existing user. Requires authentication, the given user id in the url path should match the user id specified in the JWT Access Token claim.
 
 The request body needs to be in JSON format and includes the user properties that need to be modified:
  - `name` - string
@@ -134,7 +134,7 @@ Authorization: Bearer <YOUR ACCESS TOKEN>
 ### Delete an existing user
 DELETE `/v1/users/{id}`
 
-Allows you to delete an user. Requires authentication, the given user id in the url path should match the user id specified in the JTW Access Token claim.
+Allows you to delete an user. Requires authentication, the given user id in the url path should match the user id specified in the JWT Access Token claim.
 
 Example
 ```
@@ -188,7 +188,7 @@ The returned metadata information contains:
 ### Get the attributes of the specified instrument
 GET `/v1/instruments/{id}`
 
-Allows you to view an existing intsrument. Requires authentication.
+Allows you to view an existing instrument. Requires authentication.
 
 Example
 ```
@@ -451,6 +451,7 @@ GET  /debug/vars
 - Refactor the whole application from the [fat service pattern](https://www.alexedwards.net/blog/the-fat-service-pattern) into more decoupled parts.
   - Every decoupled part should depend only on the code that they really use. (Interface segregation principle: "Clients should not be forced to depend upon interfaces that they do not use.")
   - Consider making dependencies abstract (dependency injection via depending on interfaces), so the code will become more modular, unit tests will become more clear, unit tests won't depend on the behaviour of the dependencies.
+  - Consider implementing Domain Driven Design.
   - Refactor unit tests:
     - Use assertions, mocks and test suites from [testify](https://github.com/stretchr/testify).
     - Refactor all redundant test related functionality into helper functions.
@@ -462,8 +463,8 @@ GET  /debug/vars
   - Create a logger middleware that logs every request start/completion with trace id.
   - Make sure every time an error is handled by code, it is logged (and logged exactly once).
   - Make sure every panic handling is logged with the current stack trace information.
-- Consider using [Elasticsearch](https://www.elastic.co/elasticsearch) [Logstash](https://www.elastic.co/logstash) [Kibana](https://www.elastic.co/kibana) stack for logs
-- Implement tracing via [OpenTelemetry](https://opentelemetry.io/docs/languages/go/) and [Zipkin](https://zipkin.io)
+- Consider using [Elasticsearch](https://www.elastic.co/elasticsearch) [Logstash](https://www.elastic.co/logstash) [Kibana](https://www.elastic.co/kibana) stack for logs.
+- Implement tracing via [OpenTelemetry](https://opentelemetry.io/docs/languages/go/) and [Zipkin](https://zipkin.io).
 - Make sure the api is not leaking implementation details. Make sure the error responses does not leaking implementation details:
   - Only return standars uniform errors. (safe errors)
   - In case of nonstandard errors return internal server error. (non safe errors)

@@ -51,7 +51,7 @@ Command line options for the application (If a value is not set explicitly, the 
 - **redis-password:** the password for redis (the default value is empty string)
 - **redis-db:** the number of the used redis database (default value is 0)
 
-For a convenient development experience you can use a ```.env``` file in the process root folder to set the following environment variables (makefile expects these variables to be set):
+For a convenient development experience you can use a ```.env``` file in the process root folder to set the following environment variables (makefile expects these variables to be set). (For demonstration purposes only, I provided a .env file with basic dummy values that works for the development environment):
 
 - **REDIS_ADDR:** address for the redis instance that serves the application (used by the application to connect to Redis); format: database_name:port
 - **REDIS_PASSWORD:** password for the redis instance that serves the application (used by the application to connect to Redis) (for development, empty password is fine)
